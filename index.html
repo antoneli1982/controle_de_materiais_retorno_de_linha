@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CMRL">
+<title>Controle de Materiais de Retorno de Linha — SESÉ</title>
+<script>(function(){try{if(localStorage.getItem('cmrl-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0d10;--panel:#15181c;--panel-2:#1b1f24;
+    --line:#2b3138;--line-soft:#212529;
+    --txt:#eceff2;--txt-dim:#8d97a1;--txt-faint:#565e66;
+    --blue:#0d286f;--blue-soft:#1f4fb0;
+    --green:#2fae5c;--red:#e5484d;--orange:#d99a12;
+    --purple:#7c6bd6;--focus-bg:#1e2932;
+    --yellow:#f4b400;--yellow-deep:#c98e00;
+    --font-head:'Poppins',sans-serif;--font-body:'Poppins',sans-serif;--font-mono:'Poppins',sans-serif;
+    color-scheme:dark;
+  }
+  [data-theme="light"]{
+    --bg:#eef0f3;--panel:#ffffff;--panel-2:#f2f4f6;
+    --line:#d6dade;--line-soft:#e6e9ec;
+    --txt:#171b1f;--txt-dim:#4c545c;--txt-faint:#7c848c;
+    --blue:#0d286f;--blue-soft:#0d286f;
+    --green:#237a41;--red:#c2352f;--orange:#a36b0a;
+    --purple:#5f4fbf;--focus-bg:#e9edf1;
+    --yellow:#b8860a;--yellow-deep:#8a6608;
+    color-scheme:light;
+  }
+  [data-theme="light"] body{
+    background-image:
+      linear-gradient(rgba(13,40,111,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(13,40,111,.035) 1px, transparent 1px);
+  }
+  [data-theme="light"] .seg-btn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  [data-theme="light"] .chk.on{border-color:#171b1f !important}
+  [data-theme="light"] .hazard{opacity:.55}
+  @media print{
+    .theme-toggle,#btn-print,.toolbar,.tabs,.form-panel,.hazard,.tow-scene{display:none !important}
+    body{padding:8px !important}
+    .wrap{max-width:100% !important}
+    .panel{break-inside:avoid;box-shadow:none !important}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  .hazard{height:5px;background:repeating-linear-gradient(135deg,var(--yellow) 0 10px,#15181c 10px 20px);
+    border-radius:2px}
+  body{
+    background:var(--bg);
+    background-image:
+      linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
+    background-size:auto,44px 44px,44px 44px;
+    color:var(--txt);font-family:var(--font-body);
+    min-height:100vh;padding:26px 20px 60px;overflow-x:hidden;max-width:100vw;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;gap:20px;
+    flex-wrap:wrap;border-bottom:2px solid var(--blue);padding-bottom:18px;margin-bottom:22px}
+  .brand{display:flex;align-items:center;gap:16px}
+  .logo-chip{background:#fff;border-radius:2px;padding:12px 16px;display:flex;align-items:center}
+  .logo-chip img{height:28px;display:block}
+  h1{font-family:var(--font-head);font-weight:600;font-size:22px;letter-spacing:.2px;line-height:1.15;text-transform:uppercase}
+  .sub{font-family:var(--font-head);font-size:10.5px;color:var(--txt-faint);font-weight:500;
+    text-transform:uppercase;letter-spacing:2px;margin-top:6px}
+  .clock{font-family:var(--font-body);text-align:right}
+  .clock .time{font-size:23px;font-weight:600;letter-spacing:1px;color:var(--txt);font-family:var(--font-mono)}
+  .clock .date{font-size:10px;color:var(--txt-dim);text-transform:uppercase;letter-spacing:1.4px;font-family:var(--font-head)}
+  .header-right{display:flex;align-items:center;gap:14px}
+
+  /* ---- Rebocador EKLT animado ---- */
+  .tow-scene{width:208px;height:52px;border:1px solid var(--line);border-radius:2px;
+    background:var(--panel-2);overflow:hidden;position:relative;flex-shrink:0}
+  .tow-scene svg{width:100%;height:100%;display:block}
+  .tow-track{stroke:var(--line-soft);stroke-width:2;stroke-dasharray:6 5}
+  .tow-rig{transform-box:fill-box;transform-origin:50% 50%;animation:tow-loop 12s linear infinite}
+  .tow-crates{animation:tow-crates-vis 12s linear infinite}
+  .tow-beacon{animation:tow-beacon-pulse 1s ease-in-out infinite}
+  @keyframes tow-loop{
+    0%{transform:translateX(-160px) scaleX(1)}
+    44%{transform:translateX(440px) scaleX(1)}
+    50%{transform:translateX(440px) scaleX(-1)}
+    94%{transform:translateX(-160px) scaleX(-1)}
+    100%{transform:translateX(-160px) scaleX(1)}
+  }
+  @keyframes tow-crates-vis{
+    0%,43%{opacity:1}
+    45%,93%{opacity:0}
+    95%,100%{opacity:1}
+  }
+  @keyframes tow-beacon-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  @media(max-width:720px){.tow-scene{display:none}}
+  .theme-toggle{cursor:pointer;display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);
+    border:1px solid var(--line);color:var(--txt-dim);border-radius:3px;padding:7px 13px;
+    font-family:var(--font-head);font-size:10.5px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;transition:.15s;white-space:nowrap}
+  .theme-toggle:hover{border-color:var(--yellow);color:var(--txt)}
+  @media(max-width:560px){.theme-toggle .tt-lbl{display:none}.theme-toggle{padding:8px 10px}}
+
+  .grid{display:grid;grid-template-columns:380px minmax(0,1fr);gap:22px}
+  .grid>*{min-width:0}
+  @media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:3px}
+  .panel-head{display:flex;align-items:center;gap:9px;padding:13px 16px;
+    border-bottom:1px solid var(--line-soft)}
+  .panel-head .tag{font-family:var(--font-head);font-size:10px;font-weight:600;
+    background:var(--blue);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:1px;text-transform:uppercase}
+  .panel-head h2{font-family:var(--font-head);font-size:14px;font-weight:500;letter-spacing:.4px;text-transform:uppercase}
+
+  form{padding:18px 16px 20px}
+  .field{margin-bottom:15px}
+  label{display:block;font-family:var(--font-head);font-size:10.5px;font-weight:500;
+    text-transform:uppercase;letter-spacing:1.1px;color:var(--txt-dim);margin-bottom:7px}
+  label .req{color:var(--yellow)}
+
+  input,select{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--txt);
+    border-radius:3px;padding:10px 11px;font-family:var(--font-body);font-size:13px;
+    transition:.13s}
+  input:focus,select:focus{outline:none;border-color:var(--blue-soft);background:var(--focus-bg);box-shadow:0 0 0 1px var(--blue-soft)}
+  input[readonly]{color:var(--txt-dim);cursor:default}
+  input::placeholder{color:var(--txt-faint)}
+  input[type=text]{text-transform:uppercase;font-family:var(--font-mono);letter-spacing:.3px}
+
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .time-wrap{display:flex;gap:6px}
+  .time-wrap input{flex:1;font-family:var(--font-mono)}
+  .btn-agora{cursor:pointer;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--txt-dim);border-radius:3px;padding:10px 9px;font-family:var(--font-head);
+    font-size:10.5px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;transition:.13s;flex-shrink:0}
+  .btn-agora:hover{border-color:var(--yellow);color:var(--yellow);background:var(--focus-bg)}
+
+  .seg{display:grid;gap:8px}
+  .seg.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .seg.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .seg-btn{cursor:pointer;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--txt-dim);border-radius:3px;padding:12px 4px;text-align:center;
+    font-family:var(--font-body);transition:.13s}
+  .seg-btn .n{font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;min-height:22px;font-family:var(--font-mono)}
+  .seg-btn .n svg{display:block}
+  .seg-btn .l{font-family:var(--font-head);font-size:9.5px;margin-top:4px;text-transform:uppercase;letter-spacing:.7px;display:block}
+  .seg-btn:hover{border-color:var(--txt-faint)}
+  .seg-btn.on{background:var(--blue);border-color:var(--blue-soft);color:#fff;box-shadow:inset 0 -2px 0 var(--yellow)}
+
+  .chk-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chk{cursor:pointer;border:1px solid var(--line);background:var(--panel-2);border-radius:3px;
+    padding:11px;display:flex;align-items:center;gap:9px;font-family:var(--font-head);
+    font-size:11.5px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-dim);transition:.13s}
+  .chk .box{width:16px;height:16px;border-radius:2px;border:1.5px solid var(--txt-faint);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;transition:.13s}
+  .chk.on{border-color:var(--yellow);color:var(--txt);background:var(--focus-bg)}
+  .chk.on .box{background:var(--yellow);border-color:var(--yellow)}
+  .chk.on .box::after{content:"✓";color:#15181c;font-size:10px;font-weight:800}
+
+  .submit{width:100%;cursor:pointer;background:var(--blue);color:#fff;border:1px solid var(--blue-soft);border-radius:3px;
+    padding:13px;font-family:var(--font-head);font-size:12.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
+    transition:.13s;margin-top:4px}
+  .submit:hover{background:var(--blue-soft)}
+  .submit:active{transform:translateY(1px)}
+  .hint{font-family:var(--font-body);font-size:11px;margin-top:9px;text-align:center;min-height:14px}
+  .hint.ok{color:var(--green)}
+  .hint.err{color:var(--red)}
+
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:13px 14px;border-top:2px solid var(--blue)}
+  .stat .v{font-size:20px;font-weight:700;color:var(--txt);font-family:var(--font-mono)}
+  .stat .k{font-family:var(--font-head);font-size:9.5px;color:var(--txt-faint);text-transform:uppercase;letter-spacing:.9px;margin-top:3px}
+  @media(max-width:640px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line-soft)}
+  .toolbar select,.toolbar input{width:auto;flex:1 1 130px;font-size:12px;padding:8px 10px}
+  .toolbar .btn-ghost{cursor:pointer;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--txt-dim);border-radius:3px;padding:8px 13px;font-family:var(--font-head);
+    font-size:10.5px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;transition:.13s}
+  .toolbar .btn-ghost:hover{border-color:var(--yellow);color:var(--txt)}
+  .toolbar .btn-ghost.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .toolbar .btn-ghost.danger{color:var(--red);border-color:rgba(229,72,77,.4)}
+
+  .table-scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:760px}
+  thead th{text-align:left;font-family:var(--font-head);font-size:9.5px;font-weight:500;
+    text-transform:uppercase;letter-spacing:1px;color:var(--txt-faint);padding:10px 12px;
+    border-bottom:1px solid var(--line-soft);white-space:nowrap}
+  tbody td{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--line-soft);white-space:nowrap;font-family:var(--font-mono)}
+  tbody tr:hover{background:var(--panel-2)}
+  .badge{display:inline-block;font-family:var(--font-head);font-size:9.5px;font-weight:500;padding:2px 7px;border-radius:2px;
+    letter-spacing:.6px;text-transform:uppercase}
+  .badge.hu{background:rgba(31,79,176,.18);color:var(--blue-soft)}
+  .badge.ot{background:rgba(124,107,214,.18);color:var(--purple)}
+  .badge.plastica{background:rgba(47,174,92,.15);color:var(--green)}
+  .badge.papelao{background:rgba(217,154,18,.16);color:var(--orange)}
+  .badge.unk{background:rgba(141,151,161,.15);color:var(--txt-faint)}
+  tr[title]{cursor:help}
+  .row-actions{display:flex;gap:6px}
+  .icon-btn{cursor:pointer;background:transparent;border:1px solid var(--line);color:var(--txt-dim);
+    border-radius:2px;padding:4px 8px;font-size:11px;transition:.13s}
+  .icon-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+  .icon-btn.danger:hover{border-color:var(--red);color:var(--red)}
+
+  .empty{padding:46px 20px;text-align:center;color:var(--txt-faint)}
+  .empty .big{font-size:30px;margin-bottom:8px;opacity:.5}
+  .empty .txt{font-family:var(--font-head);font-size:11px;letter-spacing:1.5px}
+
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;
+    font-family:var(--font-mono);font-size:11px;color:var(--txt-dim)}
+  .pager button{cursor:pointer;background:var(--panel-2);border:1px solid var(--line);color:var(--txt-dim);
+    border-radius:2px;padding:5px 11px;font-size:11px;font-family:var(--font-head);letter-spacing:.4px;text-transform:uppercase}
+  .pager button:disabled{opacity:.4;cursor:default}
+
+  .edit-banner{display:none;background:rgba(244,180,0,.1);border:1px solid rgba(244,180,0,.4);
+    color:var(--yellow);border-radius:2px;padding:8px 10px;margin-bottom:14px;font-size:11px;font-weight:600}
+  .edit-banner.on{display:block}
+
+  footer{margin-top:26px;text-align:center;font-family:var(--font-head);font-size:10px;
+    color:var(--txt-faint);letter-spacing:1.5px;text-transform:uppercase}
+
+  /* ---- Tabs ---- */
+  .tabs{display:flex;gap:4px;margin-bottom:18px;flex-wrap:wrap;position:relative}
+  .tab{cursor:pointer;border:1px solid var(--line);background:var(--panel);
+    color:var(--txt-dim);border-radius:2px;padding:11px 20px;position:relative;
+    font-family:var(--font-head);font-weight:500;font-size:12.5px;letter-spacing:1px;text-transform:uppercase;transition:.13s}
+  .tab:hover{border-color:var(--txt-faint);color:var(--txt)}
+  .tab.on{background:var(--blue);border-color:var(--blue-soft);color:#fff}
+  .tab.on::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;background:var(--yellow)}
+  .view{display:none}
+  .view.on{display:block}
+
+  /* ---- Autocomplete de código ---- */
+  .code-wrap{position:relative}
+  .code-desc{font-family:var(--font-body);font-size:11px;margin-top:6px;padding:6px 9px;
+    border-radius:2px;display:none}
+  .code-desc.found{display:block;background:rgba(47,174,92,.1);color:var(--green);border:1px solid rgba(47,174,92,.3)}
+  .code-desc.notfound{display:block;background:rgba(244,180,0,.08);color:var(--yellow);border:1px solid rgba(244,180,0,.3)}
+  .code-suggest{position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:20;
+    background:var(--panel);border:1px solid var(--line);border-radius:2px;max-height:220px;
+    overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.45);display:none}
+  .code-suggest.on{display:block}
+  .code-suggest .item{padding:8px 11px;cursor:pointer;border-bottom:1px solid var(--line-soft);
+    font-family:var(--font-body)}
+  .code-suggest .item:last-child{border-bottom:none}
+  .code-suggest .item:hover{background:var(--panel-2)}
+  .code-suggest .item .cc{font-size:11.5px;font-weight:700;color:var(--blue-soft);font-family:var(--font-mono)}
+  .code-suggest .item .dd{font-size:10.5px;color:var(--txt-dim);margin-top:1px}
+
+  /* ---- Cadastro de materiais ---- */
+  .cad-form{display:grid;grid-template-columns:200px 1fr auto;gap:8px;padding:14px 16px;
+    border-bottom:1px solid var(--line-soft)}
+  @media(max-width:700px){.cad-form{grid-template-columns:1fr}}
+  .cad-form input{font-size:13px}
+  .cad-form .btn-add{cursor:pointer;background:var(--blue);color:#fff;border:1px solid var(--blue-soft);border-radius:2px;
+    padding:10px 18px;font-family:var(--font-head);font-size:11.5px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
+  .file-label{cursor:pointer;display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);
+    border:1px solid var(--line);color:var(--txt-dim);border-radius:2px;padding:8px 13px;
+    font-family:var(--font-head);font-size:10.5px;font-weight:500;letter-spacing:.6px;text-transform:uppercase}
+  .file-label:hover{border-color:var(--yellow);color:var(--txt)}
+
+  /* ---- Dashboard ---- */
+  .dash-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
+  @media(max-width:960px){.dash-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(max-width:560px){.dash-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:14px;position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue)}
+  .kpi.k-warn::before{background:var(--yellow)}
+  .kpi.k-ok::before{background:var(--green)}
+  .kpi .v{font-size:21px;font-weight:700;color:var(--txt);font-family:var(--font-mono)}
+  .kpi .k{font-family:var(--font-head);font-size:9px;color:var(--txt-faint);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+
+  .dash-alert{background:rgba(244,180,0,.08);border:1px solid rgba(244,180,0,.35);color:var(--yellow);
+    border-radius:2px;padding:12px 15px;margin-bottom:16px;font-family:var(--font-body);font-size:12px;
+    line-height:1.5;border-left:3px solid var(--yellow)}
+
+  .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .dash-grid .panel.span2{grid-column:1 / -1}
+  @media(max-width:900px){.dash-grid{grid-template-columns:1fr}.dash-grid .panel.span2{grid-column:auto}}
+  .chart-wrap{position:relative;height:230px;padding:14px 16px}
+  .chart-wrap.small{height:200px}
+  .chart-wrap.tall{height:340px}
+
+  @media(max-width:600px){
+    .dash-kpis{gap:6px}
+    .kpi{padding:10px}
+    .kpi .v{font-size:16px}
+    .chart-wrap{height:190px;padding:10px}
+    .chart-wrap.tall{height:280px}
+  }
+
+  @media(max-width:600px){
+    body{padding:10px 10px 36px}
+    header{padding-bottom:10px;margin-bottom:12px;gap:10px}
+    .logo-chip{padding:7px 10px}
+    .logo-chip img{height:18px}
+    h1{font-size:14px}
+    .sub{font-size:8px;letter-spacing:.9px}
+    .clock .time{font-size:16px}
+    .clock .date{font-size:8px}
+    form{padding:12px 12px 14px}
+    input,select{font-size:16px;padding:9px 10px}
+    .toolbar select,.toolbar input{flex:1 1 46%}
+    .stats{gap:6px}
+    .stat{padding:9px 10px}
+    .stat .v{font-size:16px}
+  }
+</style>
+</head>
+<body>
+<div class="hazard" style="margin:0 0 20px"></div>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo-chip"><img src="data:image/png;base64,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" alt="SESÉ"></div>
+      <div>
+        <h1>Controle de Materiais de Retorno de Linha</h1>
+        <div class="sub">Apontamento · SESÉ</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="tow-scene" title="Rebocador EKLT — ida cheia, volta vazia">
+        <svg viewBox="0 0 360 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="towHood" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffd94d"/>
+              <stop offset=".55" stop-color="#f7c015"/>
+              <stop offset="1" stop-color="#c98e00"/>
+            </linearGradient>
+            <linearGradient id="towTire" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#33383e"/>
+              <stop offset="1" stop-color="#0c0e10"/>
+            </linearGradient>
+            <radialGradient id="towHub" cx=".35" cy=".35" r=".75">
+              <stop offset="0" stop-color="#8b939c"/>
+              <stop offset="1" stop-color="#454b52"/>
+            </radialGradient>
+          </defs>
+          <line class="tow-track" x1="0" y1="84" x2="360" y2="84"/>
+          <g class="tow-rig">
+            <!-- sombra de contato -->
+            <ellipse cx="16" cy="76" rx="16" ry="3.4" fill="#000" opacity=".35"/>
+            <ellipse cx="64" cy="76" rx="16" ry="3.4" fill="#000" opacity=".35"/>
+            <ellipse cx="-32" cy="76" rx="14" ry="3" fill="#000" opacity=".3"/>
+            <ellipse cx="-92" cy="76" rx="14" ry="3" fill="#000" opacity=".3"/>
+
+            <!-- barra de reboque -->
+            <line x1="4" y1="55" x2="-14" y2="60" stroke="#15181c" stroke-width="2.5"/>
+            <circle cx="-14" cy="60" r="2" fill="#454b52"/>
+
+            <!-- dolly (carrinho) -->
+            <rect x="-104" y="48" width="80" height="7" rx="1" fill="#1a1e23"/>
+            <rect x="-104" y="30" width="4" height="19" fill="#22262c"/>
+            <rect x="-30" y="30" width="4" height="19" fill="#22262c"/>
+            <g stroke="#2b323c" stroke-width="1">
+              <line x1="-98" y1="53" x2="-92" y2="49"/>
+              <line x1="-88" y1="53" x2="-82" y2="49"/>
+              <line x1="-78" y1="53" x2="-72" y2="49"/>
+              <line x1="-68" y1="53" x2="-62" y2="49"/>
+              <line x1="-58" y1="53" x2="-52" y2="49"/>
+              <line x1="-48" y1="53" x2="-42" y2="49"/>
+              <line x1="-38" y1="53" x2="-32" y2="49"/>
+            </g>
+            <!-- rodízios do dolly -->
+            <g>
+              <rect x="-96" y="58" width="3" height="8" fill="#3a4048"/>
+              <circle cx="-94.5" cy="69" r="7.5" fill="url(#towTire)"/><circle cx="-94.5" cy="69" r="2.6" fill="url(#towHub)"/>
+            </g>
+            <g>
+              <rect x="-38" y="58" width="3" height="8" fill="#3a4048"/>
+              <circle cx="-36.5" cy="69" r="7.5" fill="url(#towTire)"/><circle cx="-36.5" cy="69" r="2.6" fill="url(#towHub)"/>
+            </g>
+
+            <g class="tow-crates">
+              <rect x="-92" y="26" width="28" height="14" fill="#12151a" stroke="#000" stroke-opacity=".3"/>
+              <rect x="-94" y="6" width="32" height="21" rx="1.5" fill="#2fb3e8"/>
+              <rect x="-94" y="6" width="32" height="4.5" fill="#0e84b8"/>
+              <line x1="-84" y1="10.5" x2="-86" y2="26" stroke="#0e84b8" stroke-width="1"/>
+              <line x1="-78" y1="10.5" x2="-78" y2="26" stroke="#0e84b8" stroke-width="1"/>
+              <rect x="-58" y="26" width="28" height="14" fill="#12151a" stroke="#000" stroke-opacity=".3"/>
+              <rect x="-60" y="6" width="32" height="21" rx="1.5" fill="#2fb3e8"/>
+              <rect x="-60" y="6" width="32" height="4.5" fill="#0e84b8"/>
+              <line x1="-50" y1="10.5" x2="-52" y2="26" stroke="#0e84b8" stroke-width="1"/>
+              <line x1="-44" y1="10.5" x2="-44" y2="26" stroke="#0e84b8" stroke-width="1"/>
+            </g>
+
+            <!-- rebocador -->
+            <!-- chassi -->
+            <rect x="2" y="50" width="70" height="11" rx="2" fill="#15181c"/>
+            <rect x="2" y="50" width="70" height="2.5" fill="#2a2f35"/>
+
+            <!-- rodas -->
+            <circle cx="16" cy="76" r="13.5" fill="url(#towTire)"/>
+            <g stroke="#20242a" stroke-width="1.1">
+              <line x1="16" y1="63" x2="16" y2="89"/><line x1="3" y1="76" x2="29" y2="76"/>
+              <line x1="6.5" y1="66.5" x2="25.5" y2="85.5"/><line x1="25.5" y1="66.5" x2="6.5" y2="85.5"/>
+            </g>
+            <circle cx="16" cy="76" r="5" fill="url(#towHub)"/>
+            <circle cx="64" cy="76" r="13.5" fill="url(#towTire)"/>
+            <g stroke="#20242a" stroke-width="1.1">
+              <line x1="64" y1="63" x2="64" y2="89"/><line x1="51" y1="76" x2="77" y2="76"/>
+              <line x1="54.5" y1="66.5" x2="73.5" y2="85.5"/><line x1="73.5" y1="66.5" x2="54.5" y2="85.5"/>
+            </g>
+            <circle cx="64" cy="76" r="5" fill="url(#towHub)"/>
+
+            <!-- paralamas -->
+            <path d="M4 60 A13 13 0 0 1 30 60" fill="none" stroke="#0c0e10" stroke-width="3"/>
+            <path d="M52 60 A13 13 0 0 1 78 60" fill="none" stroke="#0c0e10" stroke-width="3"/>
+
+            <!-- caixa lateral / bau -->
+            <rect x="8" y="42" width="24" height="9" rx="1.5" fill="#d99a12"/>
+            <rect x="8" y="42" width="24" height="2.5" fill="#f2c04a"/>
+            <rect x="17" y="44.5" width="6" height="2" rx="1" fill="#7a5b06"/>
+
+            <!-- estrado antiderrapante dianteiro -->
+            <rect x="60" y="48" width="14" height="7" fill="#3a4148"/>
+            <g stroke="#5b6570" stroke-width=".6">
+              <line x1="61" y1="54" x2="67" y2="49"/><line x1="65" y1="54" x2="71" y2="49"/><line x1="69" y1="54" x2="73" y2="50.5"/>
+            </g>
+
+            <!-- capô / bateria (com gradiente) -->
+            <path d="M44 50 L44 21 L54 10 L72 10 L72 50 Z" fill="url(#towHood)" stroke="#a8720a" stroke-width="1"/>
+            <circle cx="66" cy="27" r="4.5" fill="#1a1a1a" stroke="#0c0e10" stroke-width="1"/>
+            <circle cx="66" cy="27" r="2" fill="#cfd6dc"/>
+            <rect x="47" y="15" width="9" height="3" rx="1" fill="#a8720a" opacity=".6"/>
+
+            <!-- banco -->
+            <path d="M14 47 Q10 47 10 42 L10 30 Q10 24 16 24 L28 24 Q33 24 33 29 L33 42 Q33 47 28 47 Z" fill="#111417"/>
+            <path d="M14 47 Q10 47 10 42 L10 30 Q10 24 16 24 L28 24 Q33 24 33 29 L33 33 L12 33 L12 47Z" fill="#1c2126" opacity=".5"/>
+            <rect x="12" y="34" width="19" height="1.4" fill="#000" opacity=".4"/>
+            <rect x="9" y="45" width="26" height="6" rx="2" fill="#0d0f11"/>
+
+            <!-- coluna de direção e volante -->
+            <line x1="30" y1="30" x2="42" y2="16" stroke="#22262c" stroke-width="3.4" stroke-linecap="round"/>
+            <circle cx="45" cy="13" r="8" fill="none" stroke="#1a1d21" stroke-width="3"/>
+            <g stroke="#1a1d21" stroke-width="1.6">
+              <line x1="45" y1="13" x2="45" y2="6"/>
+              <line x1="45" y1="13" x2="39.5" y2="17.5"/>
+              <line x1="45" y1="13" x2="50.5" y2="17.5"/>
+            </g>
+
+            <!-- espelho retrovisor -->
+            <line x1="38" y1="24" x2="34" y2="15" stroke="#20242a" stroke-width="1.4"/>
+            <ellipse cx="33" cy="13" rx="3.4" ry="2.2" fill="#20242a"/>
+
+            <!-- poste + giroflex -->
+            <line x1="15" y1="24" x2="15" y2="-16" stroke="#101316" stroke-width="2"/>
+            <ellipse class="tow-beacon" cx="15" cy="-20" rx="6.5" ry="5" fill="var(--yellow)"/>
+            <ellipse cx="13" cy="-22" rx="2.2" ry="1.4" fill="#fff" opacity=".55"/>
+          </g>
+        </svg>
+      </div>
+      <div class="clock">
+        <div class="time" id="clock-time">--:--:--</div>
+        <div class="date" id="clock-date">-- de -- de ----</div>
+      </div>
+      <div class="theme-toggle" id="theme-toggle">
+        <span class="tt-ico" id="tt-ico">🌙</span><span class="tt-lbl" id="tt-lbl">Escuro</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab on" data-view="apontamento">📋 Apontamento</div>
+    <div class="tab" data-view="dashboard">📊 Dashboard</div>
+    <div class="tab" data-view="cadastro">🗂️ Cadastro de Materiais</div>
+  </div>
+
+  <div class="view on" id="view-apontamento">
+  <div class="stats" id="stats"></div>
+
+  <div class="grid">
+    <div class="panel form-panel">
+      <div class="panel-head"><span class="tag">NOVO</span><h2>Registrar retorno de material</h2></div>
+      <form id="form">
+        <div class="edit-banner" id="edit-banner">✏️ Editando um registro existente.</div>
+
+        <div class="field">
+          <label>Data <span class="req">*</span></label>
+          <input type="date" id="f-data" required>
+        </div>
+
+        <div class="field code-wrap">
+          <label>Código do Material <span class="req">*</span></label>
+          <input type="text" id="f-codigo" placeholder="EX: 022.103139.B" required autocomplete="off">
+          <div class="code-suggest" id="code-suggest"></div>
+        </div>
+
+        <div class="field">
+          <label>Descrição do Material</label>
+          <input type="text" id="f-descricao" placeholder="Preenche automaticamente pelo código" readonly>
+          <div class="code-desc" id="code-desc"></div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Quantidade <span class="req">*</span></label>
+            <input type="number" id="f-qtd" min="1" step="1" placeholder="1" required>
+          </div>
+          <div class="field">
+            <label>Horário <span class="req">*</span></label>
+            <div class="time-wrap">
+              <input type="time" id="f-horario" required>
+              <button type="button" class="btn-agora" id="btn-agora">Agora</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Turno de Trabalho <span class="req">*</span></label>
+          <div class="seg c3" id="seg-turno">
+            <div class="seg-btn" data-v="1"><span class="n">1º</span><span class="l">Turno</span></div>
+            <div class="seg-btn" data-v="2"><span class="n">2º</span><span class="l">Turno</span></div>
+            <div class="seg-btn" data-v="3"><span class="n">3º</span><span class="l">Turno</span></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Caixa <span class="req">*</span></label>
+          <div class="seg c2" id="seg-caixa">
+            <div class="seg-btn" data-v="plastica"><span class="n"><svg viewBox="0 0 40 34" width="32" height="27" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <polygon points="9,32 31,32 33,19 7,19" fill="#15181d"/>
+              <polygon points="7,19 33,19 37,6 3,6" fill="#2fb3e8" stroke="#0b6c96" stroke-width="0.6"/>
+              <polygon points="3,6 37,6 37,9.5 3,9.5" fill="#0e84b8"/>
+              <line x1="13" y1="9.5" x2="11" y2="19" stroke="#0e84b8" stroke-width="1"/>
+              <line x1="20" y1="9.5" x2="20" y2="19" stroke="#0e84b8" stroke-width="1"/>
+              <line x1="27" y1="9.5" x2="29" y2="19" stroke="#0e84b8" stroke-width="1"/>
+              <line x1="12" y1="21" x2="10.4" y2="31" stroke="#000" stroke-width="0.6" opacity=".4"/>
+              <line x1="28" y1="21" x2="29.6" y2="31" stroke="#000" stroke-width="0.6" opacity=".4"/>
+            </svg></span><span class="l">Plástica (EKLT)</span></div>
+            <div class="seg-btn" data-v="papelao"><span class="n">📦</span><span class="l">Papelão</span></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Marcações</label>
+          <div class="chk-row">
+            <div class="chk" id="chk-hu"><div class="box"></div>HU</div>
+            <div class="chk" id="chk-ot"><div class="box"></div>OT</div>
+          </div>
+        </div>
+
+        <button type="submit" class="submit" id="btn-submit">Salvar registro</button>
+        <div class="hint" id="hint"></div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span class="tag">HISTÓRICO</span><h2>Registros de retorno de linha</h2></div>
+      <div class="toolbar">
+        <input type="date" id="filtro-de" title="De">
+        <input type="date" id="filtro-ate" title="Até">
+        <select id="filtro-turno">
+          <option value="">Todos os turnos</option>
+          <option value="1">1º Turno</option>
+          <option value="2">2º Turno</option>
+          <option value="3">3º Turno</option>
+        </select>
+        <select id="filtro-caixa">
+          <option value="">Todas as caixas</option>
+          <option value="plastica">Plástica</option>
+          <option value="papelao">Papelão</option>
+        </select>
+        <input type="text" id="filtro-codigo" placeholder="Buscar código...">
+        <button type="button" class="btn-ghost" id="btn-limpar-filtros">Limpar filtros</button>
+        <span style="flex:1"></span>
+        <button type="button" class="btn-ghost primary" id="btn-xlsx">⬇ Exportar Excel</button>
+        <button type="button" class="btn-ghost danger" id="btn-clear-all">Apagar tudo</button>
+      </div>
+      <div class="table-scroll">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th>Data</th><th>Código</th><th>Descrição</th><th>Qtd</th><th>Horário</th>
+              <th>HU/OT</th><th>Turno</th><th>Caixa</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" style="display:none" class="empty">
+        <div class="big">📋</div>
+        <div class="txt">NENHUM REGISTRO ENCONTRADO</div>
+      </div>
+      <div class="pager">
+        <span id="pager-info">0 registros</span>
+        <div style="display:flex;gap:6px">
+          <button id="pager-prev">‹ Anterior</button>
+          <button id="pager-next">Próxima ›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /view-apontamento -->
+
+  <div class="view" id="view-dashboard">
+    <div class="dash-kpis" id="dash-kpis"></div>
+
+    <div class="dash-alert" id="dash-alert" style="display:none"></div>
+
+    <div class="dash-grid">
+      <div class="panel">
+        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Registros por dia</h2></div>
+        <div class="chart-wrap"><canvas id="chart-dia"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="tag">TURNO</span><h2>Quantidade retornada por turno</h2></div>
+        <div class="chart-wrap"><canvas id="chart-turno"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="tag">CAIXA</span><h2>Distribuição por tipo de caixa</h2></div>
+        <div class="chart-wrap small"><canvas id="chart-caixa"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="tag">HU / OT</span><h2>Marcações HU e OT</h2></div>
+        <div class="chart-wrap small"><canvas id="chart-huot"></canvas></div>
+      </div>
+      <div class="panel span2">
+        <div class="panel-head"><span class="tag">RANKING</span><h2>Top 10 materiais com mais retorno</h2></div>
+        <div class="chart-wrap tall"><canvas id="chart-top"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="tag">QUALIDADE</span><h2>Confiança da leitura (dados importados)</h2></div>
+        <div class="chart-wrap small"><canvas id="chart-confianca"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="tag">COBERTURA</span><h2>Registros por página do formulário original</h2></div>
+        <div class="chart-wrap small"><canvas id="chart-pagina"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:22px">
+      <div class="panel-head"><span class="tag">REVISÃO</span><h2>Itens que precisam de confirmação</h2></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Data</th><th>Código</th><th>Qtd</th><th>Horário</th><th>Turno</th><th>Caixa</th><th>Motivo</th></tr></thead>
+          <tbody id="dash-revisao"></tbody>
+        </table>
+      </div>
+      <div id="dash-revisao-empty" style="display:none" class="empty">
+        <div class="big">✅</div>
+        <div class="txt">NENHUM ITEM PENDENTE DE REVISÃO</div>
+      </div>
+    </div>
+  </div><!-- /view-dashboard -->
+
+  <div class="view" id="view-cadastro">
+    <div class="panel">
+      <div class="panel-head"><span class="tag">CADASTRO</span><h2>Materiais cadastrados (código → descrição)</h2></div>
+      <div class="cad-form">
+        <input type="text" id="cad-codigo" placeholder="Código do material">
+        <input type="text" id="cad-descricao" placeholder="Descrição da peça">
+        <button type="button" class="btn-add" id="cad-btn-add">+ Adicionar</button>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="cad-busca" placeholder="Buscar por código ou descrição..." style="flex:2 1 220px">
+        <span style="flex:1"></span>
+        <label class="file-label">⬆ Importar Excel<input type="file" id="cad-import" accept=".xlsx,.xls,.csv" style="display:none"></label>
+        <button type="button" class="btn-ghost primary" id="cad-btn-export">⬇ Exportar Excel</button>
+        <button type="button" class="btn-ghost danger" id="cad-btn-clear">Apagar cadastro</button>
+      </div>
+      <div class="table-scroll">
+        <table id="cad-tabela">
+          <thead><tr><th>Código</th><th>Descrição</th><th></th></tr></thead>
+          <tbody id="cad-tbody"></tbody>
+        </table>
+      </div>
+      <div id="cad-empty" style="display:none" class="empty">
+        <div class="big">🗂️</div>
+        <div class="txt">NENHUM MATERIAL CADASTRADO</div>
+      </div>
+      <div class="pager">
+        <span id="cad-pager-info">0 materiais</span>
+        <div style="display:flex;gap:6px">
+          <button id="cad-pager-prev">‹ Anterior</button>
+          <button id="cad-pager-next">Próxima ›</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /view-cadastro -->
+
+  <footer>SESÉ · Controle de Materiais de Retorno de Linha · Uso interno</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var MAT_KEY = 'cmrl-materiais';
+  var MAT_SEED = [{"codigo": "022.103139.B", "descricao": "BUCHA CÂMBIO (BLOCO)"}, {"codigo": "026.103139", "descricao": "PINO CILINDRICO"}, {"codigo": "026.105635", "descricao": "ARRUELA TOPE INF"}, {"codigo": "026.105637", "descricao": "ARRUELA DE ENCOSTO"}, {"codigo": "028.103665", "descricao": "PINO DE FIXACAO (PRISIONEIRO ILHO)"}, {"codigo": "030.103011.EE", "descricao": "BLOCO DO MOTOR"}, {"codigo": "030.103021.CRROH", "descricao": "BLOCO MOTOR EA111 1.6 P VEICULOS AUTO"}, {"codigo": "030.103021.CSROH", "descricao": "BLOCO MOTOR KOMBI 1.4L EXCL P&A"}, {"codigo": "030.103041.R", "descricao": "TPA MANC ARV MANIV"}, {"codigo": "030.103041.R ROH", "descricao": "ROH CAPA DOS MANCAIS"}, {"codigo": "030.103063.FH", "descricao": "CABEÇOTE DO CILINDRO - 5029"}, {"codigo": "030.103085.S", "descricao": "RETENTOR DE EIXO CABECOTE DOS CILINDROS"}, {"codigo": "030.103113", "descricao": "TAMPA SELO DO MOTOR PARA USO AUTOMOTIVO"}, {"codigo": "030.103157.E", "descricao": "INJETOR"}, {"codigo": "030.103353.CS", "descricao": "CABECOTE DE CILIND"}, {"codigo": "030.103415.C", "descricao": "GUIA DE VALVULA CABEÇOTE MOTOR AP"}, {"codigo": "030.103485.AA", "descricao": "TAMPA FECHAMENTO DO OLEO USO AUTOMOTIVO"}, {"codigo": "030.105101.BG", "descricao": "ARVORE DE MANIVELAS DO MOTOR ''VIRA"}, {"codigo": "030.105701.AG", "descricao": "CASQUILHO DA BIELA"}, {"codigo": "030.107065.DQ", "descricao": "PISTÃO 1.0L C/ ANEIS"}, {"codigo": "030.107099.AB", "descricao": "PISTÃO"}, {"codigo": "030.107099.J", "descricao": "CONJUNTO DE PISTÃO, PINO E ANEIS DE"}, {"codigo": "030.109411.B", "descricao": "ALAVANCA DE ENGATE ROLETADA USO AUTOMOTI"}, {"codigo": "030.109423.B", "descricao": "ELEMENTO APOIO VALV ESCAPE USO AUTOMOTIV"}, {"codigo": "030.109601.AS", "descricao": "VALVULA DE ADMISSA"}, {"codigo": "030.109623.J", "descricao": "MOLA DA VALVU"}, {"codigo": "030.115105.S", "descricao": "BOMBA DE OLEO PARA USO AUTOMOTIVO"}, {"codigo": "030.198151.H", "descricao": "JOGO DE ANEIS 1.0L EA111 TEC"}, {"codigo": "030.198401.D", "descricao": "BIELA 1.0L EA111 TEC"}, {"codigo": "030.905377.D", "descricao": "SENSOR DE DETONAÇÃO"}, {"codigo": "030.905607", "descricao": "VELA DE IGNIÇÃO"}, {"codigo": "032.100033.H", "descricao": "5417 - 5417"}, {"codigo": "032.103011.S", "descricao": "BLOCO DO MOTOR"}, {"codigo": "032.103063.AA", "descricao": "CABECOTE CILINDRO - 5034"}, {"codigo": "032.103063.AB", "descricao": "CABECOTE CILINDRO - 5033"}, {"codigo": "032.103063.AD", "descricao": "CULATA DE CILINDRO - 5077"}, {"codigo": "032.103101.K", "descricao": "MOTOR PARCIAL CJ.BLOCO COM PISTÃO - 5027"}, {"codigo": "032.103161.K", "descricao": "JUNTA DE VEDACAO METALICA USO AUTOMOTIVO"}, {"codigo": "032.103170.J", "descricao": "FLANGE VEDACAO TRASEIRA"}, {"codigo": "032.103353.AB", "descricao": "CABECOTE DE CILIND - 5267"}, {"codigo": "032.103383.N", "descricao": "JUNTA DO CABECOTE DO MOTOR"}, {"codigo": "032.103431.AB", "descricao": "ANEL ASS VALV ADMI"}, {"codigo": "032.103441.M", "descricao": "ANEL ASS VALV ESCA"}, {"codigo": "032.103475.B ROH", "descricao": "TAMPA DO CABEÇOTE ROH"}, {"codigo": "032.103601.AA", "descricao": "CARTER DE OLEO MOTOR USO AUTOMOTIVO"}, {"codigo": "032.103607", "descricao": "CARTER DE OLEO PARTE SUPERIOR USO AUTOMO"}, {"codigo": "032.105101.AC", "descricao": "ARVORE DE MANIVELA VIRABREQUIM"}, {"codigo": "032.105401.AH", "descricao": "BIELA"}, {"codigo": "032.105561.E BLA", "descricao": "CASQUILHO MANCAL AZUL INF"}, {"codigo": "032.105561.E GLB", "descricao": "CASQUILHO MANCAL AMARELO INF"}, {"codigo": "032.105591.E BLA", "descricao": "CASQUILHO MANCAL AZUL SUP"}, {"codigo": "032.105591.E GLB", "descricao": "CASQUILHO MANCAL AMARELO SUP"}, {"codigo": "032.105591.E ROT", "descricao": "CASQUILHO MANCAL VERMELHO SUP"}, {"codigo": "032.105701.L", "descricao": "102QUILHO DA BIELA USO AUTOMOTIVO"}, {"codigo": "032.107065.AF", "descricao": "PISTAO C/ ANEIS"}, {"codigo": "032.107065.AG", "descricao": "PISTAO 1.6L TF EA111 EXCL. P&A"}, {"codigo": "032.107099", "descricao": "PISTAO GASOLINA"}, {"codigo": "032.107301.AB", "descricao": "ANEL DE COMPRESSAO"}, {"codigo": "032.107311.H", "descricao": "ANEL COMPRESSAO II"}, {"codigo": "032.109101.AG", "descricao": "COMANDO DE VALVULAS MOTOR USO AUTOMOTIVO"}, {"codigo": "032.109101.AH", "descricao": "COMANDO DE VALVULAS DO MOTOR"}, {"codigo": "032.109101.AJ", "descricao": "ARVORE DE COMANDO DE VALVULAS DO MO"}, {"codigo": "032.109101.AK", "descricao": "COMANDO DE VALVULAS DO MOTOR"}, {"codigo": "032.109601.M", "descricao": "VALVULA DE ADMISSAO USO AUTOMOTIVO"}, {"codigo": "032.109601.P", "descricao": "VALVULA DE ADMISSA"}, {"codigo": "032.109611.L", "descricao": "VALVULA DE ESCAPE USO AUTOMOTIVO"}, {"codigo": "032.109611.N", "descricao": "VALVULA DE ESCAPE"}, {"codigo": "032.115251.D", "descricao": "TUBO DE SUCCAO"}, {"codigo": "032.198151.D", "descricao": "JOGO"}, {"codigo": "032.198491", "descricao": "JOGO DE CASQUILHOS MANCAIS EXCLUSIVO P&A"}, {"codigo": "032.198701", "descricao": "JOGO CASQUILHO P&A"}, {"codigo": "036.103011.BD", "descricao": "BLOCO POTENCIADO"}, {"codigo": "036.103021.AHROH", "descricao": "BLOCO MOTOR EA111 1.0L TEC"}, {"codigo": "036.103113.A", "descricao": "TAMPA"}, {"codigo": "036.103383.AF", "descricao": "JUNTA CABECOTE CILINDRO USO AUTOMOTIVO"}, {"codigo": "036.103601.AL", "descricao": "Carter de óleo"}, {"codigo": "036.109641.D", "descricao": "PRATO MOLA VALVULA"}, {"codigo": "036.109651.C", "descricao": "PECA CONICA VALV"}, {"codigo": "036.109675", "descricao": "RETENTOR"}, {"codigo": "036.115105.D", "descricao": "BOMBA DE OLEO LUBRIFICANTE PARA MOT"}, {"codigo": "036.115251.AJ", "descricao": "TUBO DE SUCÇAO BOMBA DE OLEO DO CARTER"}, {"codigo": "036.919081.C", "descricao": "INTERRUPTOR DE PRESSÃO DO OLEO DO M"}, {"codigo": "038.103638.L", "descricao": "ILHO (AMORTECEDOR BORRACHA)"}, {"codigo": "038.105327.B", "descricao": "CHAPA DE ARRASTE DO MOTOR USO AUTOMOTIVO"}, {"codigo": "03C.103143", "descricao": "BUCHA GUIA JUNTA DO CABEÇOTE (LUVA)"}, {"codigo": "03F.129717.C", "descricao": "VEDACAO SISTEMA ASPIRACAO USO AUTOMOTIVO"}, {"codigo": "03F.133062.B", "descricao": "BOCAL VALVULA BORBOLETA SISTEMA DEPURAÇA"}, {"codigo": "03F.145853.A", "descricao": "GANCHO DE SUSTENTACAO"}, {"codigo": "03F.919501.B", "descricao": "SENSOR DE TEMPERATURA (TRANSMISSOR)"}, {"codigo": "04C.100010.GG", "descricao": "MOTOR - 2804"}, {"codigo": "04C.100010.GJ", "descricao": "MOTOR 1.0L EA211 MPI TF PL8 - 2812"}, {"codigo": "04C.100011.HT", "descricao": "MOTOR - 3843"}, {"codigo": "04C.100011.JT", "descricao": "MOTOR - 3849"}, {"codigo": "04C.100011.KA", "descricao": "MOTOR - 3850"}, {"codigo": "04C.100011.KB", "descricao": "MOTOR - 2800"}, {"codigo": "04C.100011.KM", "descricao": "MOTOR 1.0L TSI R3 - 2801"}, {"codigo": "04C.100011.LD", "descricao": "MOTOR TOTALFLEX 3 - 2802"}, {"codigo": "04C.100011.LG", "descricao": "MOTOR - 2803"}, {"codigo": "04C.100011.MC", "descricao": "MOTOR 1.0L EA211 TSI TF PL8 - 2809"}, {"codigo": "04C.100011.MD", "descricao": "MOTOR 1.0L EA211 TSI E0 AQ300 EXP - 2810"}, {"codigo": "04C.100031.F", "descricao": "RUMPFMOTOR 61 - 5150"}, {"codigo": "04C.100031.G", "descricao": "MOTOR PARCIAL DE USO AUTOMOTIVO - 3811"}, {"codigo": "04C.100034", "descricao": "MOTOR PARCIAL 1.0L TSI - 3823"}, {"codigo": "04C.100034.C", "descricao": "MOTOR PARCIAL - 3824"}, {"codigo": "04C.103011.G", "descricao": "BLOCO MOTOR - 5050"}, {"codigo": "04C.103011.N", "descricao": "BLOCO DO MOTOR 1.0L TSI - 5051"}, {"codigo": "04C.103023.A", "descricao": "CYLINDER BLOCK A."}, {"codigo": "04C.103023.E", "descricao": "BLOCO DO MOTOR 1.0L TSI P USO AUTOMOTIVO"}, {"codigo": "04C.103037.A", "descricao": "PLUG DE VEDACAO DE BORRACHA"}, {"codigo": "04C.103041.AC", "descricao": "TAMPA DE MANCAL DA ARVORE DE MANIVELA"}, {"codigo": "04C.103041.AD", "descricao": "TAMPA DE MANCAL DA ARVORE DE MANIVELA"}, {"codigo": "04C.103041.S", "descricao": "SUPORTE MANCAL ARVORE MANIVELA"}, {"codigo": "04C.103041.T", "descricao": "SUPORTE MANCAL ARVORE MANIVELA"}, {"codigo": "04C.103063.M", "descricao": "CABEÇOTE CILINDRO - 5085"}, {"codigo": "04C.103064.E", "descricao": "CABECOTE DO CILINDROS - 5084"}, {"codigo": "04C.103064.G", "descricao": "CAB CILINDROS MOTOR IGNICAO USO - 5081"}, {"codigo": "04C.103064.H", "descricao": "CABECOTE DO MOTOR - 5083"}, {"codigo": "04C.103064.H PMT", "descricao": "CABECOTE CILINDROS MOTOR 1.0L USO AUTOMO"}, {"codigo": "04C.103085.A", "descricao": "RETENTOR DO EIXO (WW)"}, {"codigo": "04C.103101.H", "descricao": "BLOCO C/PISTÃO 1.0L TSI GOLF - 5054"}, {"codigo": "04C.103161.E", "descricao": "VEDACAO ACO BLOCO DO MOTOR USO AUTOMOTIV"}, {"codigo": "04C.103170.P", "descricao": "FLANGE VEDACAO BLOCO MOTOR DE USO AUTOM."}, {"codigo": "04C.103335", "descricao": "TAMPA DE LIGACAO"}, {"codigo": "04C.103383.AB", "descricao": "JUNTA CABECOTE CILINDROS MOTOR 1.0L TSI"}, {"codigo": "04C.103383.K", "descricao": "JUNTA CABECOTE CILINDRO USO AUTOMOTIVO"}, {"codigo": "04C.103404.C", "descricao": "ROH CABECOTE DOS CILINDROS"}, {"codigo": "04C.103404.P", "descricao": "CABECOTE CILINDROS MOTOR EXPLOSAO"}, {"codigo": "04C.103431", "descricao": "ANEL ASSENTO VALVULA DE ADMISSAO"}, {"codigo": "04C.103431.D", "descricao": "ANEL ASSENTO VALVULA DE ADMISSAO"}, {"codigo": "04C.103441", "descricao": "ANEL ASSENTO VALVULA DE ESCAPE"}, {"codigo": "04C.103441.D", "descricao": "ANEL ASSENTO VALVULA DE ESCAPE"}, {"codigo": "04C.103464.G", "descricao": "SEPARADOR DE OLEO PARA USO AUTOMOTIVO"}, {"codigo": "04C.103469.M", "descricao": "TAMPA DO CABECOTE COM ARVORE DE CAMES A"}, {"codigo": "04C.103469.N", "descricao": "TAMPA DO CABECOTE COM ARVORE DE CAMES"}, {"codigo": "04C.103469.N PMT", "descricao": "TAMPA DO CABECOTE 1.0L TSI NAC"}, {"codigo": "04C.103474.H", "descricao": "MANGUEIRA DE RESPIRO P USO AUTOMOTIVO"}, {"codigo": "04C.103474.K", "descricao": "TUBO RESPIRO"}, {"codigo": "04C.103483.C", "descricao": "VEDACAO TAMPA DO MOTOR USO AUTOMOTIVO"}, {"codigo": "04C.103493.H", "descricao": "MANGUEIRA DE VENTILACAO"}, {"codigo": "04C.103551.E", "descricao": "PLACA INTERMEDIARIA DE USO AUTOMOTIVO"}, {"codigo": "04C.103560.C", "descricao": "TUBO DE BORRACHA DE VENTILACAO"}, {"codigo": "04C.103560.F", "descricao": "TUBO DE BORRACHA DE VENTILACAO"}, {"codigo": "04C.103600.A", "descricao": "CARTER DE OLEO P. INFERIOR DE USO AUTOM"}, {"codigo": "04C.103601.M", "descricao": "CARTER DE OLEO MOTOR A EXPLOSAO"}, {"codigo": "04C.103601.N", "descricao": "CARTER DE ÓLEO"}, {"codigo": "04C.103623.F", "descricao": "DEFLETOR DE CARTER PARA USO AUTOMOTIVO"}, {"codigo": "04C.105101.BE", "descricao": "VIRABREQUIM AUTOMOTIVO - 5273"}, {"codigo": "04C.105101.BF", "descricao": "ARVORE MANIVELAS MOTOR USO AUTOMOTIVO -"}, {"codigo": "04C.105101.R", "descricao": "ARVORE DE MANIVELAS 1.0L TSi - 5275"}, {"codigo": "04C.105123.AC", "descricao": "ARVORE DE MANIVELA 1.0L AUTOMO. S.CARLOS"}, {"codigo": "04C.105123.G", "descricao": "VIRABREQUIM ROH 1.0TSI"}, {"codigo": "04C.105123.Q", "descricao": "ARVORE DE MANIVELA 1.0L AUTOMO. S.CARLOS"}, {"codigo": "04C.105243.E", "descricao": "POLIA VIBRACAO DO VIRABREQUIM (WW)"}, {"codigo": "04C.105243.T", "descricao": "AMORTECEDOR DE VIBRACAO VIRABREQUIM DO M"}, {"codigo": "04C.105263.C", "descricao": "POLIA DENTADA PARA USO AUTOMOTIVO"}, {"codigo": "04C.105269.E", "descricao": "VOLANTE MOTOR PARA CAMBIO MANUAL 5 MARCH"}, {"codigo": "04C.105323.A", "descricao": "CHAPA DE ARRASTE DO MOTOR USO AUTOMOTIVO"}, {"codigo": "04C.105401.Q", "descricao": "BIELA 1,0L MPI TF"}, {"codigo": "04C.105561.ADBLA", "descricao": "CASQUILHO MANCAL INFERIOR AZUL USO AUTOM"}, {"codigo": "04C.105561.ADGLB", "descricao": "CASQUILHO MANCAL INFERIOR AMARELO USO AU"}, {"codigo": "04C.105561.ADROT", "descricao": "CASQUILHO MANCAL INFERIOR VERMELHO USO A"}, {"codigo": "04C.105561.AHBLA", "descricao": "CASQUILHO MANCAL INFERIOR AZUL"}, {"codigo": "04C.105561.AHGLB", "descricao": "CASQUILHO MANCAL INFERIOR AMARELO"}, {"codigo": "04C.105561.AHROT", "descricao": "CASQUILHO MANCAL INFERIOR VERMELHO"}, {"codigo": "04C.105561.S BLA", "descricao": "CASQUILHO ARVORE DE MANIVELAS P USO AUT."}, {"codigo": "04C.105561.S GLB", "descricao": "CASQUILHO ARVORE DE MANIVELAS P USO AUT."}, {"codigo": "04C.105561.S ROT", "descricao": "CASQUILHO ARVORE DE MANIVELAS P USO AUT."}, {"codigo": "04C.105591.ADBLA", "descricao": "CASQUILHO MANCAL SUPERIOR AZUL USO AUTOM"}, {"codigo": "04C.105591.ADGLB", "descricao": "CASQUILHO MANCAL SUPERIOR AMARELO USO AU"}, {"codigo": "04C.105591.ADROT", "descricao": "CASQUILHO MANCAL SUPERIOR VERMELHO USO A"}, {"codigo": "04C.105591.AHBLA", "descricao": "CASQUILHO MANCAL SUPERIOR AZUL"}, {"codigo": "04C.105591.AHGLB", "descricao": "CASQUILHO MANCAL SUPERIOR AMARELO"}, {"codigo": "04C.105591.AHROT", "descricao": "CASQUILHO MANCAL SUPERIOR VERMELHO"}, {"codigo": "04C.105591.S BLA", "descricao": "CASQUILHO ARVORE DE MANIVELAS P USO AUT."}, {"codigo": "04C.105591.S GLB", "descricao": "CASQUILHO ARVORE DE MANIVELAS P USO AUT."}, {"codigo": "04C.105591.S ROT", "descricao": "CASQUILHO ARVORE DE MANIVELAS P USO AUT."}, {"codigo": "04C.105701.F", "descricao": "CASQUILHO DA BIELA"}, {"codigo": "04C.107065.AG", "descricao": "PISTAO C/ ANEIS"}, {"codigo": "04C.107065.AS", "descricao": "PISTAO COM ANEIS DE USO AUTOMOTIVO"}, {"codigo": "04C.109088.C", "descricao": "RODA DENTADA DO EIXO COMANDO DE MOTOR"}, {"codigo": "04C.109088.D", "descricao": "RODA DENTADA DO EIXO COMANDO DE MOTOR"}, {"codigo": "04C.109088.G", "descricao": "RODA DENTADA DO EIXO COMANDO DE MOTOR"}, {"codigo": "04C.109108.L", "descricao": "PROT CORREIA DENT"}, {"codigo": "04C.109111.H", "descricao": "POLIA CORREIA DENTADA"}, {"codigo": "04C.109121.J", "descricao": "PROTETOR DA CORREIA DENTADA"}, {"codigo": "04C.109175.J", "descricao": "COBERTURA CORREIA DENTADA"}, {"codigo": "04C.109479.J", "descricao": "ROLO TENSOR DA CORREIA DENTADA USO AUTOM"}, {"codigo": "04C.109601.D", "descricao": "VALVULA DE ADMISSAO"}, {"codigo": "04C.109611.B", "descricao": "VALVULA DE ESCAPE MOTOR USO AUTOMOTIVO"}, {"codigo": "04C.109623.B", "descricao": "MOLA DE VALVULA"}, {"codigo": "04C.115105.E", "descricao": "BOMBA DE OLEO DE USO AUTOMOTIVO"}, {"codigo": "04C.115251.K", "descricao": "TUBO DE SUCCAO DE USO AUTOMOTIVO"}, {"codigo": "04C.115611.E", "descricao": "VARETA MEDIDOR OLEO"}, {"codigo": "04C.115611.K", "descricao": "VARETA MEDIDOR OLEO"}, {"codigo": "04C.121064.B", "descricao": "TUBO  DE AGUA PLASTICO PARA RESFRIAMENTO"}, {"codigo": "04C.121070.B", "descricao": "TUBO DE AGUA ARREFECIMENTO MOTOR 1.0L"}, {"codigo": "04C.121497.F", "descricao": "TUBO DE ACO PARA ARREFECIMENTO"}, {"codigo": "04C.122447.B", "descricao": "MANGUEIRA DE AGUA AÇO E BORRACHA P/ ARRE"}, {"codigo": "04C.122447.R", "descricao": "TUBO BORRACHA SISTEMA ARREFECIMENTO"}, {"codigo": "04C.122447.S", "descricao": "TUBO BORRACHA SISTEMA ARREFECIMENTO"}, {"codigo": "04C.129654.B", "descricao": "BOCAL DE ASPIRACAO DE USO AUTOMOTIVO"}, {"codigo": "04C.129656.M", "descricao": "CONDUTOR DO FILTRO DE AR P USO AUTOM"}, {"codigo": "04C.129701.A", "descricao": "COLETOR ADMISSAO 92KW P USO AUTOMOTIVO"}, {"codigo": "04C.129701.B", "descricao": "COLETOR ADMISSAO MOTOR IGNICAO CENTELHA"}, {"codigo": "04C.129709.A", "descricao": "COLETOR DE ADMISSAO  DE USO AUTOMOTIVO"}, {"codigo": "04C.129709.N", "descricao": "COLETOR ADMISSAO PARA USO AUTOMOTIVO"}, {"codigo": "04C.130241.E", "descricao": "DUTO DE CONDUCAO DE COMBUSTIVEL"}, {"codigo": "04C.130241.G", "descricao": "DUTO DE CONDUCAO DE COMBUSTIVEL"}, {"codigo": "04C.133062.AB", "descricao": "APOIO BORBOLETA"}, {"codigo": "04C.133201.AB", "descricao": "COLETOR  DE ADMISSAO PARA USO AUTOMOTIVO"}, {"codigo": "04C.133231", "descricao": "APOIO"}, {"codigo": "04C.133231.A", "descricao": "APOIO"}, {"codigo": "04C.133313.AL", "descricao": "DISTRIBUIDOR DE COMBUSTIVEL USO AUTOMOTI"}, {"codigo": "04C.133313.AP", "descricao": "DISTRIB COMBUSTIV"}, {"codigo": "04C.133320.L", "descricao": "DISTRIBUIDOR DE COMBUSTIVEL"}, {"codigo": "04C.133352.AA", "descricao": "CONDUTOR AKF COMPL"}, {"codigo": "04C.133352.BJ", "descricao": "CONDUTOR AKF COMPLETO DE USO AUTOMOTIVO"}, {"codigo": "04C.133352.BQ", "descricao": "CONDUTOR AKF COMPLETO SIST ASPIRACAO USO"}, {"codigo": "04C.133366.BK", "descricao": "CONDUTOR AKF COMPLETO 1.0L SIST ASPIRACA"}, {"codigo": "04C.133723.DC", "descricao": "TUBO DE BORRACHA DE COMBUSTIVEL COM REFO"}, {"codigo": "04C.133723.DM", "descricao": "TUBULACAO DE COMBUSTIVEL"}, {"codigo": "04C.133723.EP", "descricao": "DUTO DE ALIMENTACAO COMBUSTIVEL"}, {"codigo": "04C.141016.AA", "descricao": "DISCO EMBREAGEM 220MM USO AUTOMOTIVO"}, {"codigo": "04C.141016.AB", "descricao": "DISCO EMBREAGEM 220MM USO AUTOMOTIVO"}, {"codigo": "04C.141016.T", "descricao": "DISCO EMBREAGEM 200MM USO AUTOMOTIVO"}, {"codigo": "04C.145140.G", "descricao": "TUBO ALIMENTACAO OLEO COLETOR ESCAPAMENT"}, {"codigo": "04C.145673.C", "descricao": "TUBO PLASTICO DE PRESSAO"}, {"codigo": "04C.145673.J", "descricao": "TUBO DE PRESSAO PARA USO AUTOMOTIVO"}, {"codigo": "04C.145702.J", "descricao": "COLETOR DO ESCAPAMENTO C TUR. COMPRESSOR"}, {"codigo": "04C.145735.E", "descricao": "TUBO RETORNO OLEO COLETOR ESCAPAMENTO US"}, {"codigo": "04C.145749.A", "descricao": "RESFRIADOR DE AR MOTOR 1.0L TURBO"}, {"codigo": "04C.145853.B", "descricao": "GANCHO DE SUSTENTACAO PLASTICO PARA O TU"}, {"codigo": "04C.199207.AD", "descricao": "SUPORTE PARA FIXACAO DE MOTORES A COMBUS"}, {"codigo": "04C.199207.AS", "descricao": "TRAVESSA APOIO MOTOR USO AUTOMOTIVO"}, {"codigo": "04C.199207.BE", "descricao": "TRAVESSA APOIO MOTOR E CAMBIO USO AUTOMO"}, {"codigo": "04C.253039.D", "descricao": "JUNTA TUBO ESCAPE"}, {"codigo": "04C.253041.G", "descricao": "COBERTURA COLETORA DE AR QUENTE"}, {"codigo": "04C.905606.A", "descricao": "VELA DE IGNICAO"}, {"codigo": "04C.905607", "descricao": "VELA DE IGNICAO PARA USO AUTOMOTIVO"}, {"codigo": "04C.906054.C", "descricao": "SENSOR DE PRESSAO (HD)"}, {"codigo": "04C.972627.BF", "descricao": "CHICOTE ELETRICO MOTOR DE USO AUTOMOTIVO"}, {"codigo": "04C.972627.BG", "descricao": "CHICOTE"}, {"codigo": "04C.972627.BH", "descricao": "CHICOTE ELETRICO MOTOR USO AUTOMOTIVO"}, {"codigo": "04C.972627.BJ", "descricao": "CHICOTE"}, {"codigo": "04C.972627.BK", "descricao": "CHICOTE"}, {"codigo": "04C.972627.BM", "descricao": "CHICOTE ELETRICO P MOTOR DE USO AUTOMOT."}, {"codigo": "04C.972627.BN", "descricao": "CHICOTE ELETRICO P MOTOR DE USO AUTOMOT."}, {"codigo": "04C.972627.BP", "descricao": "CHIC PRE INST MOT"}, {"codigo": "04C.972627.BQ", "descricao": "CHICOTE ELETRICO MOTOR USO AUTOMOTIVO"}, {"codigo": "04C.972627.BS", "descricao": "CHICOTE ELETRICO P MOTOR DE USO AUTOMOT."}, {"codigo": "04E.100013.EC", "descricao": "MOTOR - 5843"}, {"codigo": "04E.100013.ED", "descricao": "MOTOR - 5842"}, {"codigo": "04E.100013.EE", "descricao": "MOTOR 1.6L MPI EA211 - 5844"}, {"codigo": "04E.100013.FE", "descricao": "MOTOR 1.6L EA211 MPI E0 - 5848"}, {"codigo": "04E.100014.CJ", "descricao": "MOTOR - 5962"}, {"codigo": "04E.100014.DB", "descricao": "MOTOR - 5968"}, {"codigo": "04E.100014.DC", "descricao": "MOTOR - 5969"}, {"codigo": "04E.100014.DF", "descricao": "MOTOR - 5763"}, {"codigo": "04E.100014.DM", "descricao": "MOTOR 1.4L TSI EXP AQ300 - 5971"}, {"codigo": "04E.100014.DP", "descricao": "MOTOR 1.6L EA211 MPI - 5764"}, {"codigo": "04E.100033.M", "descricao": "MOTOR PARCIAL - 5170"}, {"codigo": "04E.100035.A", "descricao": "MOTOR BASICO EA211 1.6L GAS - 5180"}, {"codigo": "04E.100035.K DSJ", "descricao": "MOTOR PARCIAL 1.4L EXCL P&A - 5148"}, {"codigo": "04E.103011.FL", "descricao": "BLOCO CILINDROS PARA USO AUT. - 5064"}, {"codigo": "04E.103011.HF", "descricao": "BLOCO DO MOTOR 1.6L MPI TF - 5065"}, {"codigo": "04E.103023.DJ", "descricao": "BLOCO CILINDROS P/ USO AUTO 1.4L TSi U/S"}, {"codigo": "04E.103023.EN", "descricao": "BLOCO DO MOTOR 1.6L MPI TF"}, {"codigo": "04E.103033.G", "descricao": "TAMPAO DE BORRACHA DE USO AUTOMOTIVO"}, {"codigo": "04E.103037.D", "descricao": "TAMPAO BORRACHA MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.103037.G", "descricao": "TAMPAO BORRACHA MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.103041.AB", "descricao": "TAMPA DO MANCAL ARVORE DE MANIVELA"}, {"codigo": "04E.103041.AC", "descricao": "TAMPA DO MANCAL ARVORE DE MANIVELA"}, {"codigo": "04E.103061.F", "descricao": "CYLINDER HEAD - 5097"}, {"codigo": "04E.103061.F PMT", "descricao": "CABECOTE CIL MOTOR 1.4L USO AUTOMO PL8"}, {"codigo": "04E.103066.Q", "descricao": "CABECOTE DO CILINDRO - 5089"}, {"codigo": "04E.103066.Q PMT", "descricao": "CABECOTE CILINDROS MOTOR 1.4L USO AUTOMO"}, {"codigo": "04E.103066.S", "descricao": "CYLINDER HEAD - 5090"}, {"codigo": "04E.103111.A", "descricao": "TAMPA FECHAMENTO COBERTURA CABECOTE"}, {"codigo": "04E.103153.B", "descricao": "FLANGE VEDACAO DIANT BLOCO CILINDROS USO"}, {"codigo": "04E.103157.K", "descricao": "BICO INJETOR PARA USO AUTOMOTIVO"}, {"codigo": "04E.103170.R", "descricao": "FLANGE VEDACAO TRAS BLOCO USO AUTOMOTIVO"}, {"codigo": "04E.103175", "descricao": "VALVULA DE RETENCAO CABECOTE MOTOR 1.0l"}, {"codigo": "04E.103175.M", "descricao": "VALVULA  DE RETENCAO PARA USO AUTOMOTIVO"}, {"codigo": "04E.103383.AM", "descricao": "JUNTA DO CABECOTE DO CILINDRO P USO AUTO"}, {"codigo": "04E.103383.BL", "descricao": "JUNTA CABECOTE CILINDRO USO AUTOMOTIVO"}, {"codigo": "04E.103383.CF", "descricao": "JUNTA CABECOTE CILINDRO USO AUTOMOTIVO"}, {"codigo": "04E.103383.DK", "descricao": "JUNTA CAB CILINDRO"}, {"codigo": "04E.103404.AE", "descricao": "CABECOTE DO CILINDRO AUTOMOTIVO S.CARLOS"}, {"codigo": "04E.103404.CC", "descricao": "CABECOTE DOS CILINDROS PARA MOTOR A EXPL"}, {"codigo": "04E.103415.AJ", "descricao": "GUIA DE VALVULA PARA USO AUTOMOTIVO"}, {"codigo": "04E.103415.AK", "descricao": "GUIA DE VALVULA PARA USO AUTOMOTIVO"}, {"codigo": "04E.103464.AM", "descricao": "SEPARADOR DE OLEO USO AUTOMOTIVO"}, {"codigo": "04E.103464.AN", "descricao": "SEPARADOR DE OLEO USO AUTOMOTIVO"}, {"codigo": "04E.103469.CB", "descricao": "TAMPA CABECOTE COM ARVORE CAMES USO AUTO"}, {"codigo": "04E.103469.EJ", "descricao": "TAMPA DO CABECOTE COM EIXOS DE COMANDO D"}, {"codigo": "04E.103469.ES", "descricao": "TAMPA CABECOTE 1.4 TSI USO AUTOMOTIVO"}, {"codigo": "04E.103469.ESPMT", "descricao": "TAMPA CABECOTE 1.4 TSI USO AUTOMOTIVO"}, {"codigo": "04E.103474.BB", "descricao": "MANGUEIRA DE RESPIRO DE USO AUTOMOTIVO"}, {"codigo": "04E.103474.BE", "descricao": "MANGUEIRA DE RESPIRO DE USO AUTOMOTIVO"}, {"codigo": "04E.103483.N", "descricao": "VEDACAO CABECOTE CILINDRO USO AUTOMOTIVO"}, {"codigo": "04E.103493.H", "descricao": "TUBO BORRACHA RESPIRO DE USO AUTOMOTIVO"}, {"codigo": "04E.103551.AG", "descricao": "PLACA INTERMEDIARIA CARTER DO MOTOR PARA"}, {"codigo": "04E.103560", "descricao": "TUBO DE BORRACHA DE VENTILACAO"}, {"codigo": "04E.103560.F", "descricao": "TUBO BORRACHA VULCAN. SEM ACESSORIOS"}, {"codigo": "04E.103600.B", "descricao": "BANDEJA DO CARTER DE OLEO INFERIOR USO A"}, {"codigo": "04E.103600.C", "descricao": "CARTER DO MOTOR"}, {"codigo": "04E.103600.J", "descricao": "TAMPA PARA CARTER DE OLEO"}, {"codigo": "04E.103601.E", "descricao": "CARTER DE OLEO"}, {"codigo": "04E.103601.F", "descricao": "CARTER DE OLEO MOTOR SUP USO AUTOMOTIVO"}, {"codigo": "04E.103602.B", "descricao": "CARTER DE ÓLEO"}, {"codigo": "04E.103623.AA", "descricao": "DEFLETOR DO CARTER DE OLEO P USO AUTOM."}, {"codigo": "04E.103669.C", "descricao": "COBERTURA DA BOMBA DE OLEO"}, {"codigo": "04E.103729", "descricao": "COBERTURA SEPARADOR OLEO USO AUTOMOTIVO"}, {"codigo": "04E.105101.BA", "descricao": "ARVORE DE MANIVELA 1.4L TSI"}, {"codigo": "04E.105101.CJ", "descricao": "ARVORE DE MANIVELA USO AUT. 1.4L (SCA)"}, {"codigo": "04E.105101.ED", "descricao": "VIRABREQUIM 1.6L AUTOMOTIVO - 5277"}, {"codigo": "04E.105123.AJ", "descricao": "ARVORE DE MANIVELA 1.4L AUTOMO. S.CARLOS"}, {"codigo": "04E.105123.CB", "descricao": "ARVORE MANIVELAS MOTOR 1.4L USO AUTOMOTI"}, {"codigo": "04E.105123.CC", "descricao": "ARVORE DE MANIVELA"}, {"codigo": "04E.105209.E", "descricao": "ENGRENAGEM DO VIRABREQUIM (SPROCKET)"}, {"codigo": "04E.105243.AD", "descricao": "POLIA AMORTECEDORA VIBRACAO USO AUTOM"}, {"codigo": "04E.105243.AG", "descricao": "POLIA AMORTECEDORA VIBRACAO USO AUTOM"}, {"codigo": "04E.105263.C", "descricao": "POLIA DA CORREA DENTADA USO AUTOMOTIVO"}, {"codigo": "04E.105269.E", "descricao": "VOLANTE MOTOR CAMBIO MANUAL"}, {"codigo": "04E.105269.M", "descricao": "VOLANTE MOTOR"}, {"codigo": "04E.105401.BP", "descricao": "BIELA MOTOR USO AUTOMOTIVO TSi"}, {"codigo": "04E.105401.DR", "descricao": "BIELA DO MOTOR PARA USO AUTOMOTIVO"}, {"codigo": "04E.105561.ACBLA", "descricao": "CASQUILHO MANCAL INFERIOR AZUL"}, {"codigo": "04E.105561.ACGLB", "descricao": "CASQUILHO MANCAL INFERIOR AMARELO"}, {"codigo": "04E.105561.ACROT", "descricao": "CASQUILHO MANCAL INFERIOR VERMELHO"}, {"codigo": "04E.105561.AKBLA", "descricao": "CASQUILHO MANCAL INF.AZUL 1.4L"}, {"codigo": "04E.105561.AKGLB", "descricao": "CASQUILHO MANCAL INF.AMARELO 1.4L USO AU"}, {"codigo": "04E.105561.AKROT", "descricao": "CASQUILHO MANCAL INF.VERMELHO 1.4L USO A"}, {"codigo": "04E.105561.ALBLA", "descricao": "CASQUILHO MANCAL INF.AZUL 1.4L USO AUTOM"}, {"codigo": "04E.105561.ALGLB", "descricao": "CASQUILHO MANCAL INF.AMARELO 1.4L USO AU"}, {"codigo": "04E.105561.ALROT", "descricao": "CASQUILHO MANCAL INF.VERMELHO 1.4L USO A"}, {"codigo": "04E.105591.ACBLA", "descricao": "CASQUILHO MANCAL SUPERIOR AZUL"}, {"codigo": "04E.105591.ACGLB", "descricao": "CASQUILHO MANCAL SUPERIOR AMARELO"}, {"codigo": "04E.105591.ACROT", "descricao": "CASQUILHO MANCAL SUPERIOR VERMELHO"}, {"codigo": "04E.105591.AKBLA", "descricao": "CASQUILHO MANCAL SUP.AZUL 1.4L USO AUTOM"}, {"codigo": "04E.105591.AKGLB", "descricao": "CASQUILHO MANCAL SUP.AMARELO 1.4L USO AU"}, {"codigo": "04E.105591.AKROT", "descricao": "CASQUILHO MANCAL SUP.VERMELHO 1.4L USO A"}, {"codigo": "04E.105591.ALBLA", "descricao": "CASQUILHO MANCAL SUP.AZUL 1.4L USO AUTOM"}, {"codigo": "04E.105591.ALGLB", "descricao": "CASQUILHO MANCAL SUP.AMARELO 1.4L USO AU"}, {"codigo": "04E.105591.ALROT", "descricao": "CASQUILHO MANCAL SUP.VERMELHO 1.4L USO A"}, {"codigo": "04E.105701.AMGLB", "descricao": "CASQUILHO DA BIELA MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.105701.AN", "descricao": "CASQUILHO DA BIELA DE USO AUTOMOTIVO"}, {"codigo": "04E.105701.Q", "descricao": "CASQUILHO DA BIELA MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.107065.HB", "descricao": "PISTAO C/ ANEIS USO AUTOMOTIVO"}, {"codigo": "04E.107065.HN", "descricao": "PISTAO COMPLETO PARA USO AUTOMOTIVO"}, {"codigo": "04E.107065.HQ", "descricao": "PISTAO COMPLETO MOTOR IGNICAO USO AUTOMO"}, {"codigo": "04E.107065.JD", "descricao": "PISTAO COM ANEIS USO AUTOMOTIVO"}, {"codigo": "04E.107065.JN", "descricao": "PISTAO COMPLETO MOTOR IGNICAO CENTELHA"}, {"codigo": "04E.109088.AD", "descricao": "RODA DENTADA DO EIXO COMANDO DE MOTOR"}, {"codigo": "04E.109088.AE", "descricao": "RODA DENTADA DO EIXO COMANDO DE MOTOR"}, {"codigo": "04E.109088.AQ", "descricao": "RODA DENTADA REGULADOR EIXO CORREIA DENT"}, {"codigo": "04E.109111.AB", "descricao": "POLIA CORREIA DENT"}, {"codigo": "04E.109111.AD", "descricao": "POLIA CORREIA DENTADA USO AUTOMOTIVO"}, {"codigo": "04E.109111.AT", "descricao": "POLIA DA CORREIA DENTADA"}, {"codigo": "04E.109119.C", "descricao": "CORREIRA DENTADA DE USO AUTOMOTIVO"}, {"codigo": "04E.109119.L", "descricao": "CORREIA DENTADA PARA USO AUTOMOTIVO"}, {"codigo": "04E.109153", "descricao": "TAMPA DE FECHAMENTO"}, {"codigo": "04E.109244.D", "descricao": "POLIA DE INVERSAO CORREIA DENTADA USO AU"}, {"codigo": "04E.109411.N", "descricao": "ALAVANCA ENGATE ROLETADA USO AUTOMOTIVO"}, {"codigo": "04E.109411.R", "descricao": "ALAVANCA ENGATE ROLETADA CABECOTE CILIND"}, {"codigo": "04E.109423.F", "descricao": "ELEMENTO DE APOIO PECA COMPENSADORA"}, {"codigo": "04E.109423.H", "descricao": "ELEMENTO DE APOIO VALVULA ADMISSAO"}, {"codigo": "04E.109601.AN", "descricao": "VALVULA DE ADMISSAO MPI T"}, {"codigo": "04E.109611.BA", "descricao": "VALVULA DE ESCAPE DO MOTOR P USO AUTO"}, {"codigo": "04E.109611.BP", "descricao": "VALVULA DE ESCAPE MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.109623.AC", "descricao": "MOLA DE VALVULA"}, {"codigo": "04E.109641.D", "descricao": "PRATO MOLA COMANDO DE VALVULAS USO AUTOM"}, {"codigo": "04E.109651.E", "descricao": "CHAVETA CONICA DE USO AUTOMOTIVO"}, {"codigo": "04E.109675", "descricao": "VEDACAO HASTE DA VALVULA"}, {"codigo": "04E.109675.A", "descricao": "VEDACAO HASTE DA VALVULA"}, {"codigo": "04E.115103.AC", "descricao": "BOMBA OLEO MOTOR IGNICAO CENTELHA USO AU"}, {"codigo": "04E.115105.M", "descricao": "BOMBA DE OLEO DE USO AUTOMOTIVO"}, {"codigo": "04E.115111.D", "descricao": "VEDACAO DO RADIADOR DE OLEO (ORING)"}, {"codigo": "04E.115175.A", "descricao": "FILTRO DE OLEO PARA USO AUTOMOTIVO"}, {"codigo": "04E.115225.E", "descricao": "CORRENTE DE COMANDO DA BOMBA DE OLEO"}, {"codigo": "04E.115251.AE", "descricao": "TUBO DE SUCCAO DE USO AUTOMOTIVO"}, {"codigo": "04E.115561.L", "descricao": "FILTRO DE OLEO PARA O MOTOR USO AUTOMOTI"}, {"codigo": "04E.115611.AF", "descricao": "VARETA MEDIDOR DE OLEO"}, {"codigo": "04E.115611.AM", "descricao": "VARETA MEDIDORA OLEO USO AUTOMOTIVO"}, {"codigo": "04E.115611.AN", "descricao": "VARETA MEDIDORA OLEO USO AUTOMOTIVO"}, {"codigo": "04E.121064.AH", "descricao": "TUBO D'ÁGUA"}, {"codigo": "04E.121064.E", "descricao": "TUBO DE AGUA DO RESPIRADOURO"}, {"codigo": "04E.121070.AP", "descricao": "TUBO DAGUA DE LIQUIDO REFRIGERANTE"}, {"codigo": "04E.121070.T", "descricao": "TUBO D'AGUA"}, {"codigo": "04E.121118.B", "descricao": "TAMPA APOIO CABECOTE USO AUTOMOTIVO"}, {"codigo": "04E.121600.DF", "descricao": "BOMBA AGUA VALVULA TERMOSTATICA USO AUTO"}, {"codigo": "04E.121605.E", "descricao": "CORREIA DENTADA (WW)"}, {"codigo": "04E.121605.L", "descricao": "CORREIA DENTADA"}, {"codigo": "04E.122157.BR", "descricao": "TUBO DE BORRACHA DE REFRIGERACAO MOTOR"}, {"codigo": "04E.122157.CP", "descricao": "TUBO REFRIGERACAO SISTEMA ARREFECIMENTO"}, {"codigo": "04E.122157.DH", "descricao": "MANGUEIRA DE REFREGERACAO MOTOR USO AUT."}, {"codigo": "04E.127026.BH", "descricao": "BOMBA DE COMBUSTIVEL PARA USO AUTOMOTIVO"}, {"codigo": "04E.127026.BJ", "descricao": "BOMBA DE COMBUSTIVEL PARA USO AUTOMOTIVO"}, {"codigo": "04E.129654.BG", "descricao": "TUBO ASPIRAÇÃO"}, {"codigo": "04E.129656.AR", "descricao": "BOCAL DE ASPIRACAO TUBO DE AR"}, {"codigo": "04E.129709.AM", "descricao": "COLETOR DE ADMISSAO"}, {"codigo": "04E.129709.AMPMT", "descricao": "CJ.COLETOR ADMISSAO 1.4L USO AUTOMOTIVO"}, {"codigo": "04E.129709.AS", "descricao": "COLETOR DE ADMISSAO PARA USO AUTOMOTIVO"}, {"codigo": "04E.129709.ASPMT", "descricao": "CJ.COLETOR ADMISSAO 1.4L USO AUTOMOTIVO"}, {"codigo": "04E.129712.B", "descricao": "COLETOR ADMISSAO MOTOR IGNICAO CENTELHA"}, {"codigo": "04E.129712.BC", "descricao": "COLETOR DE ADMISSAO DE USO AUTOMOTIVO"}, {"codigo": "04E.131083.K", "descricao": "BOMBA DE AR SECUNDARIA USO AUTOMOTIVO"}, {"codigo": "04E.131097.Q", "descricao": "VALVULA COMBINADA PARTIDA A FRIO USO AUT"}, {"codigo": "04E.131149.B", "descricao": "MANGUEIRA"}, {"codigo": "04E.131170.M", "descricao": "TUBO DE PLASTICO DE PRESSAO (PEN DRIVE)"}, {"codigo": "04E.131783.P", "descricao": "DEFLETOR"}, {"codigo": "04E.133036.A", "descricao": "APOIO DE ACO DA VALVULA INJETORA"}, {"codigo": "04E.133036.D", "descricao": "PECA DE APOIO DA VALVULA INJETORA"}, {"codigo": "04E.133062.AJ", "descricao": "APOIO BORBOLETA"}, {"codigo": "04E.133231.A", "descricao": "SUPORTE APOIO DE USO AUTOMOTIVO"}, {"codigo": "04E.133319.BE", "descricao": "DISTRIBUIDOR DE COMBUSTIVEL USO AUTOMOTI"}, {"codigo": "04E.133319.BG", "descricao": "DISTRIBUIDOR DE COMBUSTIVEL P USO AUTOM."}, {"codigo": "04E.133320.BE", "descricao": "DISTRIB COMBUSTIV"}, {"codigo": "04E.133366.BT", "descricao": "TUBO PLAST AKF SISTEMA ASPIRACAO USO AUT"}, {"codigo": "04E.133366.CK", "descricao": "MANGUEIRA PLASTICA C/ CONDUTOR AKF COMPL"}, {"codigo": "04E.133366.CT", "descricao": "CONDUTOR AKF COMPLETO P USO AUTOMOTIVO"}, {"codigo": "04E.133366.GQ", "descricao": "CONDUTOR AKF COMPLETO DE USO AUTOMOTIVO"}, {"codigo": "04E.133366.GR", "descricao": "CONDUTOR AKF COMPLETO DE USO AUTOMOTIVO"}, {"codigo": "04E.133366.HL", "descricao": "CONDUTOR AKF COMPLETO SIST ASPIRACAO USO"}, {"codigo": "04E.133366.HQ", "descricao": "CONDUTOR AKF COMPL"}, {"codigo": "04E.133723.GF", "descricao": "TUBULAÇÃO DE COMBUSTIVEL"}, {"codigo": "04E.133723.GG", "descricao": "TUBULACAO DE COMBUSTIVEL P USO AUTOM."}, {"codigo": "04E.133723.HJ", "descricao": "MANGUEIRA COMBUSTIVEL"}, {"codigo": "04E.133723.HP", "descricao": "DUTO ALIMENTACAO LINHA COMBUSTIVEL"}, {"codigo": "04E.133723.JB", "descricao": "TUBULACAO DE COMBUSTIVEL P USO AUTOM."}, {"codigo": "04E.133723.JK", "descricao": "TUBULACAO COMBUSTIVEL"}, {"codigo": "04E.133987.CK", "descricao": "TUBO DE COMBUSTIVEL DE BORRACHA COM REFO"}, {"codigo": "04E.145140.AS", "descricao": "TUBO ALIMENTACAO OLEO COLETOR ESCAPAMENT"}, {"codigo": "04E.145673.AQ", "descricao": "TUBO PRESSÃO"}, {"codigo": "04E.145735.AC", "descricao": "TUBO DE RETORNO DO OLEO PARA USO AUTOMOT"}, {"codigo": "04E.145749.M", "descricao": "INTERCOOLER RESFRIADOR AR SIST ASPIRACAO"}, {"codigo": "04E.145757", "descricao": "VEDACAO DO RESFRIADOR DE AR"}, {"codigo": "04E.145873.N", "descricao": "TURBO COMPRESSOR DE USO AUTOMOTIVO"}, {"codigo": "04E.145875.F", "descricao": "GANCHO DE SUSTENTACAO"}, {"codigo": "04E.198401.AA", "descricao": "KIT BIELA 1.6L MPI FLEX"}, {"codigo": "04E.198401.AB", "descricao": "KIT BIELAS 1.4L TSI P&A"}, {"codigo": "04E.199275.AJ", "descricao": "CONSOLE DIANT. DO MOTOR"}, {"codigo": "04E.199275.AQ", "descricao": "SUPORTE DO MOTOR CONSOLE DIANTEIRO"}, {"codigo": "04E.199275.BH", "descricao": "SUPORTE MOTOR"}, {"codigo": "04E.253039.F", "descricao": "JUNTA TUBO ESCAPE. *RP*"}, {"codigo": "04E.253041.AH", "descricao": "CHAPA DEFLETORA TU"}, {"codigo": "04E.905110.Q", "descricao": "BOBINA DE IGNICAO"}, {"codigo": "04E.905602.A", "descricao": "VELA DE IGNICAO NGK TSI"}, {"codigo": "04E.905602.D", "descricao": "VELA DE IGNICAO LONGLIFE USO AUTOMOTIVO"}, {"codigo": "04E.905602.F", "descricao": "VELA DE IGNICAO NGK TSI"}, {"codigo": "04E.906036.AR", "descricao": "INJETOR DE COMBUST ALTA PRESSAO USO AUTO"}, {"codigo": "04E.907660.C", "descricao": "SENSOR CÁRTER SULEV P&A"}, {"codigo": "04E.919081.A", "descricao": "INTERRUPTOR PRESSAO DE OLEO USO AUTOMOTI"}, {"codigo": "04E.971612.GA", "descricao": "CHICOTE"}, {"codigo": "04E.971612.GB", "descricao": "CHICOTE ELETR PARA MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.972627.DB", "descricao": "CHICOTE PRE INSTAL"}, {"codigo": "04E.972627.DC", "descricao": "CHICOTE ELETRICO MOTOR DE USO AUTOMOTIVO"}, {"codigo": "04E.972627.MF", "descricao": "CHICOTE ELETRICO MOTOR DE USO AUTOMOTIVO"}, {"codigo": "04E.972627.ML", "descricao": "CHICOTE"}, {"codigo": "04E.972627.MN", "descricao": "CHICOTE ELETRICO MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.972627.MP", "descricao": "CHICOTE ELETRICO MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.972627.MR", "descricao": "CHICOTE PRE INST MOTOR"}, {"codigo": "04E.972627.MS", "descricao": "CHICOTE ELETRICO MOTOR USO AUTOMOTIVO"}, {"codigo": "04E.972627.MT", "descricao": "CHIC PRE INST MOT"}, {"codigo": "051.105301", "descricao": "ARRUELA FRONTAL DA CHAPA DE ARRASTE"}, {"codigo": "056.105303", "descricao": "ARRUELA TRASEIRA DA CHAPA DE ARRASTE"}, {"codigo": "05C.105561.  BLA", "descricao": "CASQUILHO MANCAL INF.AZUL"}, {"codigo": "05C.105561.  GLB", "descricao": "CASQUILHO MANCAL INF.AMARELO"}, {"codigo": "05C.105561.  ROT", "descricao": "CASQUILHO MANCAL INF.VERMELHO"}, {"codigo": "05C.105561.A BLA", "descricao": "CASQUILHO MANCAL INF.AZUL"}, {"codigo": "05C.105561.A GLB", "descricao": "CASQUILHO MANCAL INF.AMARELO"}, {"codigo": "05C.105561.A ROT", "descricao": "CASQUILHO MANCAL INF.VERMELHO"}, {"codigo": "05C.105591.  BLA", "descricao": "CASQUILHO MANCAL SUP.AZUL"}, {"codigo": "05C.105591.  GLB", "descricao": "CASQUILHO MANCAL SUP.AMARELO"}, {"codigo": "05C.105591.  ROT", "descricao": "CASQUILHO MANCAL SUP.VERMELHO"}, {"codigo": "05C.105591.A BLA", "descricao": "CASQUILHO MANCAL SUP.AZUL"}, {"codigo": "05C.105591.A GLB", "descricao": "CASQUILHO MANCAL SUP.AMARELO"}, {"codigo": "05C.105591.A ROT", "descricao": "CASQUILHO MANCAL SUP.VERMELHO"}, {"codigo": "05E.103551", "descricao": "PLACA INTERMEDIARIA CARTER OLEO USO AUTO"}, {"codigo": "05E.103825", "descricao": "LUVA POLIA DE ADMISSAO (TUBETE)"}, {"codigo": "05E.105561.  BLA", "descricao": "CASQUILHO MANCAL INFERIOR AZUL"}, {"codigo": "05E.105561.  GLB", "descricao": "CASQUILHO MANCAL INFERIOR AMARELO (WW)"}, {"codigo": "05E.105561.  ROT", "descricao": "CASQUILHO MANCAL INFERIOR VERMELHO"}, {"codigo": "05E.105561.A BLA", "descricao": "CASQUILHO MANCAL INFERIOR AZUL"}, {"codigo": "05E.105561.A GLB", "descricao": "CASQUILHO MANCAL INFERIOR AMARELO (WW)"}, {"codigo": "05E.105561.A ROT", "descricao": "CASQUILHO MANCAL INFERIOR VERMELHO"}, {"codigo": "05E.105591.  BLA", "descricao": "CASQUILHO MANCAL SUPERIOR AZUL"}, {"codigo": "05E.105591.  GLB", "descricao": "CASQUILHO MANCAL SUPERIOR AMARELO (WW)"}, {"codigo": "05E.105591.  ROT", "descricao": "CASQUILHO MANCAL SUPERIOR VERMELHO"}, {"codigo": "05E.105591.A BLA", "descricao": "CASQUILHO MANCAL SUPERIOR AZUL"}, {"codigo": "05E.105591.A GLB", "descricao": "CASQUILHO MANCAL SUPERIOR AMARELO (WW)"}, {"codigo": "05E.105591.A ROT", "descricao": "CASQUILHO MANCAL SUPERIOR VERMELHO"}, {"codigo": "05E.109311.B", "descricao": "ROLETE TAMPA DE CABEÇOTE 1.0/1.4 TSI"}, {"codigo": "05E.109611.F", "descricao": "VALVULA DE ESCAPE PARA USO AUTOMOTIVO"}, {"codigo": "05E.117021", "descricao": "RESFRIADOR OLEO MOTOR CENTELHA USO AUTOM"}, {"codigo": "06E.115243.H", "descricao": "VALVULA DE CONTROLE PARA USO AUTOMOTIVO"}, {"codigo": "06L.906052.A", "descricao": "SENSOR DE PRESSAO"}, {"codigo": "101.905601.G", "descricao": "VELA DE IGNICAO PARA USO AUTOMOTIVO"}, {"codigo": "1K0.971461.AA", "descricao": "DEFLETOR DE CALOR DE USO AUTOMOTIVO"}, {"codigo": "1K0.971461.AB", "descricao": "DEFLETOR DE CALOR DE USO AUTOMOTIVO"}, {"codigo": "1K0.971461.P", "descricao": "DEFLETOR DE CALOR BOMBA OLEO USO AUTOMOT"}, {"codigo": "1K0.971461.R", "descricao": "DEFLETOR DE CALOR DE USO AUTOMOTIVO"}, {"codigo": "A2090012903", "descricao": "PLASTICO BOLHA Rolo com 100 metros  20KG"}, {"codigo": "A2090063484", "descricao": "TINTA EP.CZ.CLA.RAL7023 10Y5/1"}, {"codigo": "A2140001500", "descricao": "SAPATO BIQ.ACO COM CORDAO 43"}, {"codigo": "A2140002334", "descricao": "MASCARA DESCART.P/VAPOR/POEIRA"}, {"codigo": "A2140002698", "descricao": "PERNEIRA RASPA FECHO C/VELCRO"}, {"codigo": "A2140004090", "descricao": "LUVA TRICOTADA ALGODAO PIGMENTADA12PAR"}, {"codigo": "A2140008208", "descricao": "SAPATO BIQ.ACO COM CORDAO 47"}, {"codigo": "A2150002372", "descricao": "CAMISA SOCIAL M/L AZUL CLARO N.03"}, {"codigo": "A2150022198", "descricao": "CAMISA SOCIAL BRANCA MASC ADM MC GG/5"}, {"codigo": "A2150022206", "descricao": "CAMISA SOCIAL BRANCA MASC ADM MC EG/6"}, {"codigo": "A2150022461", "descricao": "BERMUDA MASCULINA CINZA P/38"}, {"codigo": "A2160000069", "descricao": "GASOLINA COMUM"}, {"codigo": "A3010000416", "descricao": "BROCA ACO RAPIDO 4,5 D.33"}, {"codigo": "A3010004293", "descricao": "ESCAREADOR 52 24C 7/1"}, {"codigo": "A3080000882", "descricao": "PINCEL CHATO N 22 160 TIGRE"}, {"codigo": "A3080021722", "descricao": "PONTA ALLEN 3/8 X SW6 X 35"}, {"codigo": "A4070001963", "descricao": "GARRAFA TERMICA 1 LITRO"}, {"codigo": "A4400001955", "descricao": "LUVA TRICOTADA NYLON SUJA TAM. P"}, {"codigo": "A4400002714", "descricao": "TAMPAO CORPO BORBOL TC54.0 - RECUPERADO"}, {"codigo": "A4400004322", "descricao": "LUVA TRICOTADA NYLON SUJA TAM. M"}, {"codigo": "A4400007432", "descricao": "LUVA TRICOTADA NYLON SUJA TAM. G"}, {"codigo": "A4400007440", "descricao": "LUVA TRICOTADA NYLON SUJA TAM. XG"}, {"codigo": "A4400012761", "descricao": "TAMPAO PLASTICO TC17.0 - RECUPERADO"}, {"codigo": "A4400017696", "descricao": "TAMPAO COLE. AD TC49.0- RECUPER"}, {"codigo": "A4400029485", "descricao": "TAMPAO DE BORRACHA COR AZUL - Recuperado"}, {"codigo": "A4400032505", "descricao": "TAMPAO PLASTICO TC38.0 - RECUPERADO"}, {"codigo": "A44001471015", "descricao": "PARAFUSO OLHAL DIANTEIRO"}, {"codigo": "A4400147218", "descricao": "PARAFUSO OLHAL  TRASEIRO"}, {"codigo": "A440103390F", "descricao": "OLHAL  TRANSPORTE DIANTEIRO (2 PAR.)"}, {"codigo": "A440103390G", "descricao": "OLHAL  TRANSPORTE TRASEIRO"}, {"codigo": "AMV.176300", "descricao": "SILIKONKAUTSCHUK F"}, {"codigo": "AMV.176501", "descricao": "SILICONE ADESIVO VEDACAO USO AUTOMOTIVO"}, {"codigo": "AMV.189300", "descricao": "ATIVADOR DE MASSA VEDACAO"}, {"codigo": "AMV.189400", "descricao": "MASSA DE VEDACAO PARA USO AUTOMOTIV"}, {"codigo": "AMV.200005", "descricao": "Cola"}, {"codigo": "EAUX0001", "descricao": "CAPA"}, {"codigo": "EAUX0003", "descricao": "ProteCAo  retornavel  tecido"}, {"codigo": "EBFV0024", "descricao": "BANDEJA VACUUM FORMING"}, {"codigo": "EBFV0032", "descricao": "BANDEJA VACUUM FORMING"}, {"codigo": "EBFV0050", "descricao": "BANDEJA VACUMM FORMING"}, {"codigo": "EBFV0053", "descricao": "BANDEJA VACUMM FORMING"}, {"codigo": "EBFV0055", "descricao": "BANDEJA VACUMM FORMING"}, {"codigo": "EBFV0065", "descricao": "BANDEJA VACUMM FORMING"}, {"codigo": "EBFV0066", "descricao": "BANDEJA VACUMM FORMING"}, {"codigo": "EBFV0068", "descricao": "BANDEJA VACUMM FORMING"}, {"codigo": "EBMM0005", "descricao": "BANDEJA DIVERSAS  METAL/MAD"}, {"codigo": "EBMM0008", "descricao": "BANDEJA DIVERSAS  METAL/MAD"}, {"codigo": "ECAC0001", "descricao": "CACAMBA DE FERRO"}, {"codigo": "ECAC0002", "descricao": "CACAMBA GRANDE"}, {"codigo": "ECAR0009", "descricao": "CESTO ARAMADO"}, {"codigo": "ECAR0020", "descricao": "CESTO ARAMADO"}, {"codigo": "ECAR0033", "descricao": "CESTO ARAMADO"}, {"codigo": "ECKV3754", "descricao": "CAIXA METALICA"}, {"codigo": "ECKV3755", "descricao": "CAIXA METALICA"}, {"codigo": "ECKV3763", "descricao": "CAIXA METALICA"}, {"codigo": "ECMN1176", "descricao": "CAIXA METALICA NAO DOBRAVEL"}, {"codigo": "ECMP0004", "descricao": "CONTEINER PINTURA"}, {"codigo": "ECOB1210", "descricao": "COBERTURA PLASTICA"}, {"codigo": "ECOB1291", "descricao": "TAMPA"}, {"codigo": "ECPO0102", "descricao": "KLT Schalld mpfer"}, {"codigo": "ECXD0000", "descricao": "CAIXA MADEIRA USO GERAL"}, {"codigo": "ECXL1634", "descricao": "Protetor filtro de óleo"}, {"codigo": "ECXP0000", "descricao": "EMBALAGEM DESCARTAVEL USO GERAL"}, {"codigo": "ECXP1175", "descricao": "Embalagem Descartável de Uso Geral"}, {"codigo": "ECXP8060", "descricao": "embalagem descartavel"}, {"codigo": "ECXP9999", "descricao": "CAIXA MADEIRA OU PAPELAO"}, {"codigo": "EEDOLLIE", "descricao": "DOLLIE ESPECIAL"}, {"codigo": "EEPP1623", "descricao": "KLT Schalld mpfer-Verbindungsr"}, {"codigo": "EGLT1185", "descricao": "CONTEINER PLASTICO"}, {"codigo": "EKLT3214", "descricao": "CAIXA  KLT VDA 4500"}, {"codigo": "EKLT4314", "descricao": "CAIXA  KLT VDA 4500"}, {"codigo": "EKLT4329", "descricao": "CAIXA PÁSTICA"}, {"codigo": "EKLT6421", "descricao": "CAIXA KLT VDA 4500"}, {"codigo": "EKLT6428", "descricao": "CAIXA KLT VDA 4500"}, {"codigo": "EKLT6429", "descricao": "CAIXA PLASTICA KLT 6429"}, {"codigo": "EMQ200", "descricao": "RACK FERRO COM BANDEJA PLÁST DE POLIETIL"}, {"codigo": "EPAF0001", "descricao": "BASE"}, {"codigo": "EPAF0002", "descricao": "BASE"}, {"codigo": "EPAL1070", "descricao": "PALLET PLASTICO"}, {"codigo": "EPAL1115", "descricao": "Palete de Plastico"}, {"codigo": "EPAL1116", "descricao": "PALLET PLASTICO"}, {"codigo": "EPAM0000", "descricao": "palete de madeira"}, {"codigo": "EPAM0001", "descricao": "PALETE DE MADEIRA"}, {"codigo": "EPAM0014", "descricao": "PALLET DE EUCALIPTO"}, {"codigo": "ERAD0110", "descricao": "RACK METALICO PARA PECAS DIVER"}, {"codigo": "ERAD0128", "descricao": "RACK ESP"}, {"codigo": "ERAD0229", "descricao": "RACK ESP"}, {"codigo": "ERAD0286", "descricao": "RACK ESP"}, {"codigo": "ERAD0415", "descricao": "RACK ESP"}, {"codigo": "ERAD1053", "descricao": "RACK ESP Schalld mpfer"}, {"codigo": "ERAD1054", "descricao": "Rack - Sistema Escape Ant."}, {"codigo": "ERAD1055", "descricao": "RACK ESP Schalld mpfer"}, {"codigo": "ERAD1098", "descricao": "RACK ESP Schalld mpfer"}, {"codigo": "ERAD1199", "descricao": "RACK METALICO"}, {"codigo": "ERBA0013", "descricao": "RACK ESP"}, {"codigo": "ERBA0028", "descricao": "RACK ESP"}, {"codigo": "ERBA0036", "descricao": "RACK ESP"}, {"codigo": "ERBA0037", "descricao": "RACK ESP Cabeçote"}, {"codigo": "ERBA0046", "descricao": "RACK ESP"}, {"codigo": "ERBA0048", "descricao": "RACK ESP"}, {"codigo": "ERBA0088", "descricao": "RACK ESP Schalld mpfer"}, {"codigo": "ERKL6429", "descricao": "CAIXA RKL VDA 4500"}, {"codigo": "ERM12212", "descricao": "RACK ESP"}, {"codigo": "ETAM4030", "descricao": "TAMPA PARA CAIXA PLASTICA"}, {"codigo": "EVWB0002", "descricao": "RACK ESP"}, {"codigo": "EVWB0095", "descricao": "ACONDICIONADOR"}, {"codigo": "EVWB0097", "descricao": "Rack para acondic. Motores EA211 Amarelo"}, {"codigo": "EVWB0098", "descricao": "RACK ESP"}, {"codigo": "EVWB0099", "descricao": "RACK MOTOR EA111"}, {"codigo": "EVWB0121", "descricao": "Rack Acondic. Motores EA211-4 cilind."}, {"codigo": "EVWB0127", "descricao": "RACK ESP"}, {"codigo": "EVWB0155", "descricao": "RACK ESP"}, {"codigo": "EVWB0173", "descricao": "RACK ESP"}, {"codigo": "EVWB0248", "descricao": "rack"}, {"codigo": "EVWB0249", "descricao": "RACK METALICO"}, {"codigo": "EVWB0261", "descricao": "EMBALAGEM LATERAL EXTERNA ESQU"}, {"codigo": "EVWB0267", "descricao": "Rack Acondic. Motores EA211"}, {"codigo": "EVWB0299", "descricao": "RACK ESP"}, {"codigo": "EVWB0394", "descricao": "RACK ESP"}, {"codigo": "EVWB0409", "descricao": "RACK ESP Schalld mpfer-Verbind"}, {"codigo": "EVWB0410", "descricao": "RACK ESP"}, {"codigo": "EVWB0420", "descricao": "RACK ESP"}, {"codigo": "MKL.106264.70", "descricao": "ADESIVO ANAEROBICO"}, {"codigo": "N  .010210.20", "descricao": "PARAFUSO CABO MASSA TAMPA DO CABEÇOTE"}, {"codigo": "N  .010244.26", "descricao": "PARAFUSO SENSOR DE DETONAÇAO (377.D)"}, {"codigo": "N  .011901.11", "descricao": "TAMPA DE FECHAMENTO A20"}, {"codigo": "N  .011907.11", "descricao": "TAMPA ACO PARA CABECOTE MOTOR USO AUTOMO"}, {"codigo": "N  .011909.8", "descricao": "TAMPA DE FECHAMENTO BLOCO DO CILINDRO"}, {"codigo": "N  .011914.11", "descricao": "TAMPA A24 DE FECHAMENTO CABECOTE DOS CIL"}, {"codigo": "N  .011917.3", "descricao": "TAMPA FECHAMENTO DO BLOCO DO CILINDRO"}, {"codigo": "N  .011918.5", "descricao": "TAMPA DE VEDACAO"}, {"codigo": "N  .015082.10", "descricao": "PORCA ACO MEDIO CARB M6*RP*"}, {"codigo": "N  .022148.12", "descricao": "PORCA DO CABO MASSA CHICOTE"}, {"codigo": "N  .052553.00", "descricao": "OLEO PARA MOTOR 5W"}, {"codigo": "N  .052560.KB", "descricao": "MOLYKOTE BIELA"}, {"codigo": "N  .052735.00", "descricao": "OLEO LUBRIFICANTE COM ADITIVO VEICULO AU"}, {"codigo": "N  .052801.40", "descricao": "GASOLINA C/ ALCOOL"}, {"codigo": "N  .052802.10", "descricao": "ALCOOL ETÍLICO PARA FINS CARBURANTES"}, {"codigo": "N  .052921.20", "descricao": "GASOLINA PURA"}, {"codigo": "N  .090261.6", "descricao": "PARAFUSO COMBINADO"}, {"codigo": "N  .090261.9", "descricao": "PARAFUSO COMBINADO"}, {"codigo": "N  .100878.02", "descricao": "PARAF. PRISIONEIRO"}, {"codigo": "N  .101243.08", "descricao": "PARAFUSO MANGUEIRA DE RESPIRO (TSI)"}, {"codigo": "N  .101961.04", "descricao": "PARAFUSO PESCADOR"}, {"codigo": "N  .102186.02", "descricao": "TAMPA DE FECHAMENTO"}, {"codigo": "N  .102638.01", "descricao": "PARAFUSO SEXTAVADO"}, {"codigo": "N  .104056.04", "descricao": "PARAFUSO CRASH HOLDER E TUBO D´AGUA"}, {"codigo": "N  .104305.03", "descricao": "PARAFUSO SEXT. FLA"}, {"codigo": "N  .104562.01", "descricao": "PARAFUSO CAPA SUPERIOR DA CORREIA (1.6)"}, {"codigo": "N  .105464.03", "descricao": "PARAFUSO TAMPA POLIA(04 08 0A)"}, {"codigo": "N  .105479.02", "descricao": "PARAFUSO CORPO BORBOLETA (MPI)"}, {"codigo": "N  .106190.01", "descricao": "PARAFUSO MULTIDENTADO INTERNO M8X20"}, {"codigo": "N  .106261.02", "descricao": "PARAFUSO CORPO BORBOLETA (1.0 TSI)"}, {"codigo": "N  .106532.01", "descricao": "PARAFUSO SENSOR DE TEMP(06 09 0B)"}, {"codigo": "N  .106533.01", "descricao": "PARAFUSO FLANGE TRASEIRA (103170)"}, {"codigo": "N  .106536.01", "descricao": "PARAFUSO GAL. CB 1.4/VALV. COMB. 1.4 PL8"}, {"codigo": "N  .106554.02", "descricao": "PARAFUSO BOMBA DE ÓLEO 1.4 TSI (103.M)"}, {"codigo": "N  .106558.01", "descricao": "PARAFUSO CONSOLE (MAIOR)"}, {"codigo": "N  .106648.01", "descricao": "PARAFUSO TUBO DE REFRIGERAÇÃO"}, {"codigo": "N  .106680.01", "descricao": "PARAFUSO CORPO BORBOLETA (1.4 TSI)"}, {"codigo": "N  .106703.01", "descricao": "PARAFUSO GALERIA DO CABEÇOTE 1.0 TSI"}, {"codigo": "N  .106720.01", "descricao": "PARAFUSO BOMBA ÓLEO (115105) M8 \"MAIOR\""}, {"codigo": "N  .106902.01", "descricao": "PARAFUSO (ROLO"}, {"codigo": "N  .106965.02", "descricao": "PARAFUSO M8 TUBO D´AGUA 1.6 (MAIOR)"}, {"codigo": "N  .107069.01", "descricao": "PARAFUSO CONSOLE(MENOR)(02 00 0A)"}, {"codigo": "N  .107148.01", "descricao": "PARAFUSO TUBO (070.B) COL. TSI PRÉ MONT"}, {"codigo": "N  .107214.01", "descricao": "PARAFUSO TUBO (064.B) COL. TSI PRÉ MONT"}, {"codigo": "N  .107390.02", "descricao": "PARAFUSO BOBINA(06 10 0A)"}, {"codigo": "N  .107480.01", "descricao": "PARAFUSO CARTER CHAPA"}, {"codigo": "N  .107612.01", "descricao": "ANEL DE BORRACHA B14X24X30*VDA*"}, {"codigo": "N  .107735.01", "descricao": "PRISIONEIRO ESCAPE CB (1.0 E 1.6 MPI)"}, {"codigo": "N  .108161.01", "descricao": "PARAFUSO ACO MEDIO CARBONO M6X38MM"}, {"codigo": "N  .900084.01", "descricao": "PARAFUSO SEXT. FLA"}, {"codigo": "N  .900542.01", "descricao": "ESFERA ACO VEDACAO CABECOTE USO AUTOMOTI"}, {"codigo": "N  .903207.01", "descricao": "PARAFUSO EMBREAGEM"}, {"codigo": "N  .905006.05", "descricao": "PARAFUSO CARTER DE ALUMÍNIO"}, {"codigo": "N  .905708.05", "descricao": "PORCA QUE FICA EM CIMA DO ILHO (638.L)"}, {"codigo": "N  .906867.01", "descricao": "BRACADEIRA MANGUEIRAS RP (PRETA)"}, {"codigo": "N  .906904.01", "descricao": "PINO CILINDRICO (GUIA FLANGE TRASEIRA)"}, {"codigo": "N  .907378.03", "descricao": "PARAFUSO BLOW BY"}, {"codigo": "N  .907542.02", "descricao": "BRAÇADEIRA TUBO (064.B/A)"}, {"codigo": "N  .907847.02", "descricao": "PARAFUSO CABO MASSA DE CABEÇOTE"}, {"codigo": "N  .908424.02", "descricao": "PARAFUSO COMBINADO SEXTAVADO M6X22"}, {"codigo": "N  .909377.02", "descricao": "BRACADEIRA P&A"}, {"codigo": "N  .909462.01", "descricao": "PARAFUSO 12 CANTOS"}, {"codigo": "N  .909865.03", "descricao": "BRACADEIRA MANGUEIRA DE COMBUSTÍVEL"}, {"codigo": "N  .910896.01", "descricao": "PARAFUSO BOMBA D´AGUA"}, {"codigo": "N  .910967.01", "descricao": "PARAFUSO (TAMPA LIGAÇÃO E SOLENÓIDE BLC"}, {"codigo": "N  .910968.01", "descricao": "PARAFUSO CAPA INFERIOR (175.F)/(109108)"}, {"codigo": "N  .910972.01", "descricao": "PARAFUSO CAPA BOMBA (121.E)/COL ADM TSI"}, {"codigo": "N  .911014.01", "descricao": "BUJAO BLOCO"}, {"codigo": "N  .911083.01", "descricao": "PARAFUSO CAPA DEFLETORA TRASEIRA (041.G)"}, {"codigo": "N  .911087.01", "descricao": "PARAFUSO BOMBA ÓLEO (115105) M6 \"MENOR\""}, {"codigo": "N  .911287.01", "descricao": "PARAFUSO BOMBA COMB (TAMPA CB PRE MONT)"}, {"codigo": "N  .911455.02", "descricao": "PARAFUSO POLIA TRASEIRA (111.AD)"}, {"codigo": "N  .911878.03", "descricao": "PARAFUSO CAPA DEFLETORA TRASEIRA (041.F)"}, {"codigo": "N  .912002.01", "descricao": "PRISIONEIRO ESCAPE CB (1.0 E 1.4 TSI)"}, {"codigo": "N  .912033.01", "descricao": "PARAFUSO POLIA ESCAPE (111.H / 111.AB)"}, {"codigo": "N  .912044.01", "descricao": "PARAFUSO POLY V"}, {"codigo": "N  .912375.01", "descricao": "PARAFUSO ANCORAGEM GALERIA/ ADM 1.0 MPI"}, {"codigo": "N  .912429.01", "descricao": "PARAFUSO COLETOR ADMISSÃO (1.0/1.6 MPI)"}, {"codigo": "N  .912543.01", "descricao": "PARAFUSO TAMPA DO CABEÇOTE (MAIOR)"}, {"codigo": "N  .912544.01", "descricao": "PARAFUSO TAMPA DO CABEÇOTE (MENOR)"}, {"codigo": "N  .912646.01", "descricao": "PARAFUSO POLIA VVT"}, {"codigo": "WHT.000001.N", "descricao": "PORCA DA TURBINA"}, {"codigo": "WHT.001865", "descricao": "PARAFUSO CILINDRICO FLANGEADO M9X126.5"}, {"codigo": "WHT.004877", "descricao": "PARAFUSO MANCAL"}, {"codigo": "WHT.004914", "descricao": "PARAF TAMPÃO DE FECHAMENTO POLIA(VVT)"}, {"codigo": "WHT.004986.H", "descricao": "ARRUELA DE ENCOSTO 53.5X68X2.425"}, {"codigo": "WHT.005551.A", "descricao": "PARAFUSO INTERCOOLER 1.0"}, {"codigo": "WHT.006235", "descricao": "PINO PRETO"}, {"codigo": "WHT.007089", "descricao": "PARAFUSO DO CABEÇOTE NO BLOCO"}, {"codigo": "WHT.007820", "descricao": "PARAFUSO RADIADOR DE ÓLEO"}, {"codigo": "WHT.009512", "descricao": "PARAFUSO INTERCOOLER 1.4"}, {"codigo": "WHT.009656", "descricao": "PARAFUSO DO VOLANTE (AMARELO)"}, {"codigo": "WHT.009861", "descricao": "PARAFUSO CHAPA DE ARRASTE (12KT)"}];
+
+  function norm(s){ return (s||'').toString().trim().toUpperCase().replace(/\s+/g,' '); }
+
+  function loadMat(){
+    try{
+      var raw = localStorage.getItem(MAT_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    var seeded = MAT_SEED.map(function(m){ return {codigo: m.codigo, descricao: m.descricao}; });
+    saveMat(seeded);
+    return seeded;
+  }
+  function saveMat(list){ try{ localStorage.setItem(MAT_KEY, JSON.stringify(list)); }catch(e){} }
+
+  var materiais = loadMat();
+  var matIndex = {};
+  function rebuildIndex(){
+    matIndex = {};
+    materiais.forEach(function(m){ matIndex[norm(m.codigo)] = m.descricao; });
+  }
+  rebuildIndex();
+
+  window.CMRL = {
+    getAll: function(){ return materiais; },
+    lookup: function(codigo){
+      var v = matIndex[norm(codigo)];
+      return v === undefined ? null : v;
+    },
+    search: function(query, limit){
+      var q = norm(query);
+      if(!q) return [];
+      limit = limit || 8;
+      var out = [];
+      for(var i=0;i<materiais.length && out.length<limit;i++){
+        var m = materiais[i];
+        if(norm(m.codigo).indexOf(q) !== -1 || norm(m.descricao).indexOf(q) !== -1) out.push(m);
+      }
+      return out;
+    },
+    upsert: function(codigo, descricao){
+      codigo = (codigo||'').toString().trim().toUpperCase();
+      descricao = (descricao||'').toString().trim();
+      if(!codigo || !descricao) return false;
+      var idx = materiais.findIndex(function(m){ return norm(m.codigo) === norm(codigo); });
+      if(idx >= 0) materiais[idx] = {codigo: codigo, descricao: descricao};
+      else materiais.push({codigo: codigo, descricao: descricao});
+      materiais.sort(function(a,b){ return a.codigo < b.codigo ? -1 : 1; });
+      saveMat(materiais); rebuildIndex();
+      return true;
+    },
+    remove: function(codigo){
+      materiais = materiais.filter(function(m){ return norm(m.codigo) !== norm(codigo); });
+      saveMat(materiais); rebuildIndex();
+    },
+    clearAll: function(){
+      materiais = []; saveMat(materiais); rebuildIndex();
+    },
+    bulkImport: function(rows){
+      var added = 0, updated = 0;
+      rows.forEach(function(r){
+        var codigo = (r.codigo||'').toString().trim().toUpperCase();
+        var descricao = (r.descricao||'').toString().trim();
+        if(!codigo || !descricao) return;
+        var idx = materiais.findIndex(function(m){ return norm(m.codigo) === norm(codigo); });
+        if(idx >= 0){ materiais[idx] = {codigo: codigo, descricao: descricao}; updated++; }
+        else{ materiais.push({codigo: codigo, descricao: descricao}); added++; }
+      });
+      materiais.sort(function(a,b){ return a.codigo < b.codigo ? -1 : 1; });
+      saveMat(materiais); rebuildIndex();
+      return {added: added, updated: updated};
+    }
+  };
+
+  /* ---- Abas ---- */
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
+      document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('on'); });
+      tab.classList.add('on');
+      document.getElementById('view-' + tab.getAttribute('data-view')).classList.add('on');
+      if(tab.getAttribute('data-view') === 'cadastro') renderCadastro();
+      if(tab.getAttribute('data-view') === 'dashboard' && window.CMRL_renderDashboard) window.CMRL_renderDashboard();
+    });
+  });
+
+  /* ---- CRUD Cadastro ---- */
+  var catPage = 1, CAT_PAGE_SIZE = 20;
+
+  function renderCadastro(){
+    var busca = norm(document.getElementById('cad-busca').value);
+    var lista = materiais.filter(function(m){
+      return !busca || norm(m.codigo).indexOf(busca) !== -1 || norm(m.descricao).indexOf(busca) !== -1;
+    }).sort(function(a,b){ return a.codigo < b.codigo ? -1 : 1; });
+
+    var totalPages = Math.max(1, Math.ceil(lista.length / CAT_PAGE_SIZE));
+    if(catPage > totalPages) catPage = totalPages;
+    var slice = lista.slice((catPage-1)*CAT_PAGE_SIZE, catPage*CAT_PAGE_SIZE);
+
+    var tbody = document.getElementById('cad-tbody');
+    if(!slice.length){
+      tbody.innerHTML = '';
+      document.getElementById('cad-empty').style.display = 'block';
+    }else{
+      document.getElementById('cad-empty').style.display = 'none';
+      tbody.innerHTML = slice.map(function(m){
+        return '<tr>' +
+          '<td><b>'+m.codigo+'</b></td>' +
+          '<td>'+m.descricao+'</td>' +
+          '<td><div class="row-actions">' +
+            '<button class="icon-btn" data-cad-edit="'+m.codigo.replace(/"/g,'&quot;')+'">✎</button>' +
+            '<button class="icon-btn danger" data-cad-del="'+m.codigo.replace(/"/g,'&quot;')+'">🗑</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    document.getElementById('cad-pager-info').textContent = lista.length + (lista.length===1 ? ' material' : ' materiais') + ' · página '+catPage+' de '+totalPages;
+    document.getElementById('cad-pager-prev').disabled = catPage <= 1;
+    document.getElementById('cad-pager-next').disabled = catPage >= totalPages;
+
+    tbody.querySelectorAll('[data-cad-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var cod = btn.getAttribute('data-cad-edit');
+        var m = materiais.find(function(x){ return norm(x.codigo) === norm(cod); });
+        if(!m) return;
+        document.getElementById('cad-codigo').value = m.codigo;
+        document.getElementById('cad-descricao').value = m.descricao;
+        document.getElementById('cad-codigo').scrollIntoView({behavior:'smooth', block:'start'});
+      });
+    });
+    tbody.querySelectorAll('[data-cad-del]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var cod = btn.getAttribute('data-cad-del');
+        if(!confirm('Excluir o material "'+cod+'" do cadastro?')) return;
+        window.CMRL.remove(cod);
+        renderCadastro();
+      });
+    });
+  }
+
+  document.getElementById('cad-btn-add').addEventListener('click', function(){
+    var codigo = document.getElementById('cad-codigo').value;
+    var descricao = document.getElementById('cad-descricao').value;
+    if(!window.CMRL.upsert(codigo, descricao)){
+      alert('Preencha código e descrição.');
+      return;
+    }
+    document.getElementById('cad-codigo').value = '';
+    document.getElementById('cad-descricao').value = '';
+    catPage = 1;
+    renderCadastro();
+  });
+
+  document.getElementById('cad-busca').addEventListener('input', function(){ catPage = 1; renderCadastro(); });
+  document.getElementById('cad-pager-prev').addEventListener('click', function(){ if(catPage>1){ catPage--; renderCadastro(); } });
+  document.getElementById('cad-pager-next').addEventListener('click', function(){ catPage++; renderCadastro(); });
+
+  document.getElementById('cad-btn-clear').addEventListener('click', function(){
+    if(!confirm('Apagar TODO o cadastro de materiais? Esta ação não pode ser desfeita.')) return;
+    window.CMRL.clearAll();
+    renderCadastro();
+  });
+
+  document.getElementById('cad-btn-export').addEventListener('click', function(){
+    if(typeof XLSX === 'undefined'){ alert('Biblioteca de exportação não carregada.'); return; }
+    var rows = window.CMRL.getAll().map(function(m){
+      return {'Nº do material': m.codigo, 'Texto breve de material': m.descricao};
+    });
+    var ws = XLSX.utils.json_to_sheet(rows);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Materiais');
+    XLSX.writeFile(wb, 'cadastro_materiais.xlsx');
+  });
+
+  document.getElementById('cad-import').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    if(typeof XLSX === 'undefined'){ alert('Biblioteca de importação não carregada.'); return; }
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var wb = XLSX.read(ev.target.result, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        if(!rows.length){ alert('Planilha vazia.'); return; }
+        var startIdx = 0;
+        var h0 = (rows[0][0]||'').toString().toLowerCase();
+        var h1 = (rows[0][1]||'').toString().toLowerCase();
+        if(h0.indexOf('cod') !== -1 || h0.indexOf('material') !== -1 || h1.indexOf('desc') !== -1 || h1.indexOf('texto') !== -1) startIdx = 1;
+        var parsed = [];
+        for(var i=startIdx;i<rows.length;i++){
+          var row = rows[i];
+          if(!row || !row[0]) continue;
+          parsed.push({codigo: row[0], descricao: row[1]});
+        }
+        var res = window.CMRL.bulkImport(parsed);
+        alert('Importação concluída: '+res.added+' adicionados, '+res.updated+' atualizados.');
+        catPage = 1;
+        renderCadastro();
+      }catch(err){
+        alert('Não foi possível ler o arquivo. Verifique se é um Excel/CSV válido.');
+      }
+      document.getElementById('cad-import').value = '';
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  renderCadastro();
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+  var charts = {};
+
+  function destroyChart(key){
+    if(charts[key]){ charts[key].destroy(); charts[key] = null; }
+  }
+
+  function loadRegistros(){
+    try{
+      var raw = localStorage.getItem('cmrl-registros');
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+
+  var TURNO_LABEL = {'1':'1º Turno','2':'2º Turno','3':'3º Turno'};
+  var PALETTE = {
+    blue:'#3866f7', blueSoft:'#5b82ff', green:'#3fb950', red:'#f0533f',
+    orange:'#f0953f', purple:'#9a6cf0', faint:'#5d6b7a'
+  };
+
+  function isLight(){ return document.documentElement.getAttribute('data-theme') === 'light'; }
+  function gridColor(){ return isLight() ? 'rgba(20,30,45,.08)' : 'rgba(255,255,255,.07)'; }
+  function textColor(){ return isLight() ? '#505b69' : '#8b97a5'; }
+
+  function baseOpts(extra){
+    var opts = {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:textColor(), font:{family:'Poppins', size:11} } } },
+      scales:{
+        x:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{color:gridColor()} },
+        y:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{color:gridColor()}, beginAtZero:true }
+      }
+    };
+    return Object.assign(opts, extra || {});
+  }
+
+  function fmtDataBR(iso){
+    if(!iso) return '';
+    var p = iso.split('-');
+    return p[2]+'/'+p[1];
+  }
+
+  function renderDashboard(){
+    var chartsOk = typeof Chart !== 'undefined';
+    var registros = loadRegistros();
+
+    /* ---- KPIs ---- */
+    var total = registros.length;
+    var totalQtd = registros.reduce(function(s,r){ return s + (r.qtd||0); }, 0);
+    var codigos = {}; registros.forEach(function(r){ codigos[r.codigo] = true; });
+    var totalCodigos = Object.keys(codigos).length;
+    var comHU = registros.filter(function(r){ return r.hu === true; }).length;
+    var pctHU = total ? Math.round(comHU/total*100) : 0;
+    var importados = registros.filter(function(r){ return r.importado; });
+    var baixaConf = importados.filter(function(r){ return r.confianca === 'Baixa'; }).length;
+    var datasValidas = registros.map(function(r){ return r.data; }).filter(Boolean).sort();
+    var periodo = datasValidas.length ? fmtDataBR(datasValidas[0])+' a '+fmtDataBR(datasValidas[datasValidas.length-1]) : '—';
+
+    document.getElementById('dash-kpis').innerHTML =
+      '<div class="kpi"><div class="v">'+total+'</div><div class="k">Total de registros</div></div>' +
+      '<div class="kpi"><div class="v">'+totalQtd+'</div><div class="k">Peças retornadas</div></div>' +
+      '<div class="kpi"><div class="v">'+totalCodigos+'</div><div class="k">Códigos distintos</div></div>' +
+      '<div class="kpi k-ok"><div class="v">'+pctHU+'%</div><div class="k">Com marcação HU</div></div>' +
+      '<div class="kpi'+(baixaConf?' k-warn':'')+'"><div class="v">'+baixaConf+'</div><div class="k">Confiança baixa (importados)</div></div>' +
+      '<div class="kpi"><div class="v" style="font-size:14px">'+periodo+'</div><div class="k">Período coberto</div></div>';
+
+    var alertEl = document.getElementById('dash-alert');
+    var avisos = [];
+    if(!chartsOk){
+      avisos.push('⚠ Os gráficos não puderam ser carregados (sem conexão com a internet). Os números abaixo continuam corretos.');
+    }
+    if(importados.length){
+      avisos.push('⚠ <b>'+importados.length+' registros</b> desta base vieram da transcrição manuscrita do formulário original em papel (\'CONTROLE DE MATERIAIS DE RETORNO DE LINHA\'). ' +
+        'A caligrafia é ambígua em vários trechos — <b>'+baixaConf+' registros</b> têm confiança de leitura baixa. Revise os itens listados na tabela "Itens que precisam de confirmação" abaixo antes de considerar os números definitivos.');
+    }
+    if(avisos.length){
+      alertEl.style.display = 'block';
+      alertEl.innerHTML = avisos.join('<br><br>');
+    }else{
+      alertEl.style.display = 'none';
+    }
+
+    if(chartsOk){
+    /* ---- Registros por dia ---- */
+    var porDia = {};
+    registros.forEach(function(r){ if(r.data) porDia[r.data] = (porDia[r.data]||0) + 1; });
+    var diasOrdenados = Object.keys(porDia).sort();
+    destroyChart('dia');
+    charts.dia = new Chart(document.getElementById('chart-dia'), {
+      type:'line',
+      data:{ labels: diasOrdenados.map(fmtDataBR), datasets:[{
+        label:'Registros', data: diasOrdenados.map(function(d){ return porDia[d]; }),
+        borderColor: PALETTE.blueSoft, backgroundColor:'rgba(91,130,255,.15)', fill:true, tension:.3, pointRadius:3
+      }]},
+      options: baseOpts({ plugins:{ legend:{display:false} } })
+    });
+
+    /* ---- Quantidade por turno ---- */
+    var qtdTurno = {'1':0,'2':0,'3':0};
+    registros.forEach(function(r){
+      (r.turno||[]).forEach(function(t){ if(qtdTurno[t] !== undefined) qtdTurno[t] += (r.qtd||0); });
+    });
+    destroyChart('turno');
+    charts.turno = new Chart(document.getElementById('chart-turno'), {
+      type:'bar',
+      data:{ labels:['1º Turno','2º Turno','3º Turno'], datasets:[{
+        label:'Peças retornadas', data:[qtdTurno['1'],qtdTurno['2'],qtdTurno['3']],
+        backgroundColor:[PALETTE.blue, PALETTE.purple, PALETTE.orange], borderRadius:6
+      }]},
+      options: baseOpts({ plugins:{ legend:{display:false} } })
+    });
+
+    /* ---- Caixa ---- */
+    var caixaCount = {plastica:0, papelao:0, mista:0, none:0};
+    registros.forEach(function(r){
+      var c = r.caixa || [];
+      if(c.length === 0) caixaCount.none++;
+      else if(c.length > 1) caixaCount.mista++;
+      else if(c[0] === 'plastica') caixaCount.plastica++;
+      else if(c[0] === 'papelao') caixaCount.papelao++;
+    });
+    destroyChart('caixa');
+    charts.caixa = new Chart(document.getElementById('chart-caixa'), {
+      type:'doughnut',
+      data:{ labels:['Plástica','Papelão','Mista','Não informado'], datasets:[{
+        data:[caixaCount.plastica, caixaCount.papelao, caixaCount.mista, caixaCount.none],
+        backgroundColor:[PALETTE.green, PALETTE.orange, PALETTE.purple, PALETTE.faint], borderWidth:0
+      }]},
+      options: baseOpts({ scales:{} })
+    });
+
+    /* ---- HU / OT ---- */
+    function triCount(field){
+      var s=0,n=0,u=0;
+      registros.forEach(function(r){ if(r[field]===true) s++; else if(r[field]===false) n++; else u++; });
+      return [s,n,u];
+    }
+    var hu3 = triCount('hu'), ot3 = triCount('ot');
+    destroyChart('huot');
+    charts.huot = new Chart(document.getElementById('chart-huot'), {
+      type:'bar',
+      data:{ labels:['Sim','Não','Indefinido'], datasets:[
+        {label:'HU', data:hu3, backgroundColor:PALETTE.blue, borderRadius:5},
+        {label:'OT', data:ot3, backgroundColor:PALETTE.purple, borderRadius:5}
+      ]},
+      options: baseOpts({})
+    });
+
+    /* ---- Top 10 materiais ---- */
+    var porCodigo = {};
+    registros.forEach(function(r){
+      if(!porCodigo[r.codigo]) porCodigo[r.codigo] = {qtd:0, count:0, descricao:r.descricao||''};
+      porCodigo[r.codigo].qtd += (r.qtd||0);
+      porCodigo[r.codigo].count += 1;
+      if(!porCodigo[r.codigo].descricao && window.CMRL){
+        var d = window.CMRL.lookup(r.codigo);
+        if(d) porCodigo[r.codigo].descricao = d;
+      }
+    });
+    var topArr = Object.keys(porCodigo).map(function(c){ return Object.assign({codigo:c}, porCodigo[c]); });
+    topArr.sort(function(a,b){ return b.qtd - a.qtd; });
+    topArr = topArr.slice(0, 10);
+    destroyChart('top');
+    charts.top = new Chart(document.getElementById('chart-top'), {
+      type:'bar',
+      data:{ labels: topArr.map(function(t){ return t.codigo + (t.descricao ? ' — '+t.descricao.substring(0,28) : ''); }),
+        datasets:[{ label:'Quantidade retornada', data: topArr.map(function(t){ return t.qtd; }), backgroundColor: PALETTE.blueSoft, borderRadius:5 }] },
+      options: baseOpts({ indexAxis:'y', plugins:{legend:{display:false}} })
+    });
+
+    /* ---- Confiança da leitura ---- */
+    var confCount = {'Alta':0,'Média':0,'Baixa':0};
+    importados.forEach(function(r){ if(confCount[r.confianca] !== undefined) confCount[r.confianca]++; });
+    destroyChart('confianca');
+    charts.confianca = new Chart(document.getElementById('chart-confianca'), {
+      type:'pie',
+      data:{ labels:['Alta','Média','Baixa'], datasets:[{
+        data:[confCount['Alta'], confCount['Média'], confCount['Baixa']],
+        backgroundColor:[PALETTE.green, PALETTE.orange, PALETTE.red], borderWidth:0
+      }]},
+      options: baseOpts({ scales:{} })
+    });
+
+    /* ---- Página do formulário original ---- */
+    var pagCount = {};
+    importados.forEach(function(r){ pagCount[r.pagina] = (pagCount[r.pagina]||0) + 1; });
+    var pags = Object.keys(pagCount).sort();
+    destroyChart('pagina');
+    charts.pagina = new Chart(document.getElementById('chart-pagina'), {
+      type:'bar',
+      data:{ labels: pags.map(function(p){ return 'Página '+p; }), datasets:[{
+        label:'Registros', data: pags.map(function(p){ return pagCount[p]; }),
+        backgroundColor: PALETTE.orange, borderRadius:6
+      }]},
+      options: baseOpts({ plugins:{legend:{display:false}} })
+    });
+
+    }
+
+    /* ---- Itens para revisão ---- */
+    function motivos(r){
+      var m = [];
+      if(!r.importado) return m;
+      if(r.confianca === 'Baixa') m.push('confiança de leitura baixa');
+      if(!r.data) m.push('sem data legível');
+      if(r.qtd == null) m.push('quantidade ilegível');
+      if(r.hu === null) m.push('marcação HU ilegível');
+      if(r.ot === null) m.push('marcação OT ilegível');
+      if(!r.turno || r.turno.length === 0) m.push('turno ilegível');
+      if(r.turno && r.turno.length > 1) m.push('múltiplos turnos marcados');
+      if(!r.caixa || r.caixa.length === 0) m.push('caixa não identificada');
+      if(r.caixa && r.caixa.length > 1) m.push('mais de um tipo de caixa marcado');
+      if(r.horario && !/^\d{2}:\d{2}$/.test(r.horario)) m.push('horário ilegível');
+      return m;
+    }
+    var revisao = registros.map(function(r){ return {r:r, m:motivos(r)}; }).filter(function(x){ return x.m.length; });
+    var tbody = document.getElementById('dash-revisao');
+    if(!revisao.length){
+      tbody.innerHTML = '';
+      document.getElementById('dash-revisao-empty').style.display = 'block';
+    }else{
+      document.getElementById('dash-revisao-empty').style.display = 'none';
+      tbody.innerHTML = revisao.map(function(x){
+        var r = x.r;
+        return '<tr>' +
+          '<td>'+(r.data ? fmtDataBR(r.data)+'/'+r.data.split('-')[0] : '—')+'</td>' +
+          '<td><b>'+r.codigo+'</b></td>' +
+          '<td>'+(r.qtd==null?'—':r.qtd)+'</td>' +
+          '<td>'+(r.horario||'—')+'</td>' +
+          '<td>'+((r.turno||[]).map(function(t){return TURNO_LABEL[t]||t;}).join('/')||'—')+'</td>' +
+          '<td>'+((r.caixa||[]).join('/')||'—')+'</td>' +
+          '<td style="color:var(--orange)">'+x.m.join(', ')+'</td>' +
+        '</tr>';
+      }).join('');
+    }
+  }
+
+  window.CMRL_renderDashboard = renderDashboard;
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+  var STORAGE_KEY = 'cmrl-registros';
+  var REGISTROS_SEED = [{"id": 1000000, "data": "2026-06-18", "codigo": "04C109108L", "descricao": "", "qtd": 1, "horario": "02:30", "hu": true, "ot": true, "turno": ["1"], "caixa": ["papelao"], "confianca": "Média", "pagina": 1, "importado": true, "criadoEm": 1750000000000}, {"id": 1000001, "data": "2026-06-18", "codigo": "04E103470R", "descricao": "", "qtd": 1, "horario": "02:40", "hu": true, "ot": true, "turno": ["1"], "caixa": ["papelao"], "confianca": "Média", "pagina": 1, "importado": true, "criadoEm": 1750000000001}, {"id": 1000002, "data": "2026-06-21", "codigo": "1K0971461AA", "descricao": "", "qtd": 1, "horario": "06:45", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000002}, {"id": 1000003, "data": "2026-06-19", "codigo": "04C133320L", "descricao": "", "qtd": 1, "horario": "04:30", "hu": true, "ot": false, "turno": ["3"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000003}, {"id": 1000004, "data": "2026-06-22", "codigo": "04C103623F", "descricao": "", "qtd": 1, "horario": "06:30", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 1, "importado": true, "criadoEm": 1750000000004}, {"id": 1000005, "data": "2026-06-22", "codigo": "04E145875F", "descricao": "", "qtd": 1, "horario": "07:34", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 1, "importado": true, "criadoEm": 1750000000005}, {"id": 1000006, "data": "2026-06-23", "codigo": "04E10341SAJ", "descricao": "", "qtd": 1, "horario": "06:30", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000006}, {"id": 1000007, "data": "2026-06-23", "codigo": "N9109720L", "descricao": "", "qtd": 1, "horario": "07:22", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000007}, {"id": 1000008, "data": "2026-06-23", "codigo": "04C122447B", "descricao": "", "qtd": 1, "horario": "17:11", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 1, "importado": true, "criadoEm": 1750000000008}, {"id": 1000009, "data": "2026-06-24", "codigo": "05E103825", "descricao": "", "qtd": 6, "horario": "00:57", "hu": true, "ot": false, "turno": ["2", "3"], "caixa": ["plastica", "papelao"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000009}, {"id": 1000010, "data": "2026-06-24", "codigo": "04E03560", "descricao": "", "qtd": 1, "horario": "10:43", "hu": true, "ot": false, "turno": ["2"], "caixa": ["papelao"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000010}, {"id": 1000011, "data": "2026-06-24", "codigo": "04E906036AR", "descricao": "", "qtd": 2, "horario": "11:38", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 1, "importado": true, "criadoEm": 1750000000011}, {"id": 1000012, "data": "2026-06-24", "codigo": "1K0971461AB", "descricao": "", "qtd": 1, "horario": "12:59", "hu": false, "ot": false, "turno": ["1", "2", "3"], "caixa": ["plastica", "papelao"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000012}, {"id": 1000013, "data": "2026-06-24", "codigo": "04E109183", "descricao": "", "qtd": 1, "horario": "23:30", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000013}, {"id": 1000014, "data": "2026-06-25", "codigo": "04C103108L", "descricao": "", "qtd": 1, "horario": "20:30", "hu": false, "ot": false, "turno": ["2"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000014}, {"id": 1000015, "data": "2026-06-27", "codigo": "04C121497F", "descricao": "", "qtd": 1, "horario": "03:00", "hu": false, "ot": true, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000015}, {"id": 1000016, "data": "2026-06-28", "codigo": "N9126460L", "descricao": "", "qtd": 2, "horario": "13:31", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000016}, {"id": 1000017, "data": "2026-06-29", "codigo": "04C103470P", "descricao": "", "qtd": 2, "horario": "16:31", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000017}, {"id": 1000018, "data": "2026-06-29", "codigo": "04C103470P", "descricao": "", "qtd": 1, "horario": "16:58", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000018}, {"id": 1000019, "data": "2026-06-29", "codigo": "04C103470P", "descricao": "", "qtd": 1, "horario": "17:01", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 1, "importado": true, "criadoEm": 1750000000019}, {"id": 1000020, "data": "2026-06-10", "codigo": "04E109107L", "descricao": "", "qtd": 2, "horario": "15:57", "hu": false, "ot": false, "turno": [], "caixa": [], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000020}, {"id": 1000021, "data": "2026-06-30", "codigo": "04G103170AP", "descricao": "", "qtd": 2, "horario": "08:55", "hu": false, "ot": false, "turno": [], "caixa": [], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000021}, {"id": 1000022, "data": "2026-06-11", "codigo": "04E133320BE", "descricao": "", "qtd": 1, "horario": "08:34", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 2, "importado": true, "criadoEm": 1750000000022}, {"id": 1000023, "data": "2026-06-11", "codigo": "04E103474BE", "descricao": "", "qtd": 1, "horario": "14:54", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 2, "importado": true, "criadoEm": 1750000000023}, {"id": 1000024, "data": "2026-06-11", "codigo": "04E906054C", "descricao": "", "qtd": 1, "horario": "17:0?", "hu": false, "ot": null, "turno": ["1"], "caixa": [], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000024}, {"id": 1000025, "data": "2026-06-12", "codigo": "04E031400", "descricao": "", "qtd": 1, "horario": "04:30", "hu": true, "ot": false, "turno": ["1"], "caixa": ["papelao"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000025}, {"id": 1000026, "data": "2026-06-15", "codigo": "04E109423H", "descricao": "", "qtd": 3, "horario": "06:30", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 2, "importado": true, "criadoEm": 1750000000026}, {"id": 1000027, "data": "2026-06-15", "codigo": "04C109108L", "descricao": "", "qtd": 2, "horario": "06:42", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 2, "importado": true, "criadoEm": 1750000000027}, {"id": 1000028, "data": "2026-06-15", "codigo": "04E103551AG", "descricao": "", "qtd": 1, "horario": "08:39", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 2, "importado": true, "criadoEm": 1750000000028}, {"id": 1000029, "data": "2026-06-15", "codigo": "04E905110R", "descricao": "", "qtd": 1, "horario": "08:20", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Média", "pagina": 2, "importado": true, "criadoEm": 1750000000029}, {"id": 1000030, "data": null, "codigo": "04E727026BJ", "descricao": "", "qtd": 1, "horario": null, "hu": false, "ot": false, "turno": ["2"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000030}, {"id": 1000031, "data": null, "codigo": "04C767065AS", "descricao": "", "qtd": 1, "horario": null, "hu": false, "ot": false, "turno": ["2"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000031}, {"id": 1000032, "data": null, "codigo": "04C103431D", "descricao": "", "qtd": 1, "horario": null, "hu": false, "ot": false, "turno": ["2"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000032}, {"id": 1000033, "data": "2026-06-16", "codigo": "N10748001", "descricao": "", "qtd": 2, "horario": "06:10", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000033}, {"id": 1000034, "data": "2026-06-16", "codigo": "04C133352BJ", "descricao": "", "qtd": 1, "horario": "06:30", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000034}, {"id": 1000035, "data": "2026-06-16", "codigo": "N91089601 (parafuso)", "descricao": "", "qtd": 1, "horario": "06:59", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000035}, {"id": 1000036, "data": "2026-06-16", "codigo": "04C103161E", "descricao": "", "qtd": 3, "horario": "09:42", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000036}, {"id": 1000037, "data": "2026-06-16", "codigo": "N91097201", "descricao": "", "qtd": 2, "horario": "10:45", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000037}, {"id": 1000038, "data": "2026-06-17", "codigo": "04C109108L", "descricao": "", "qtd": 2, "horario": "16:18", "hu": false, "ot": true, "turno": ["2"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000038}, {"id": 1000039, "data": "2026-06-17", "codigo": "04E133220BE", "descricao": "", "qtd": 1, "horario": "09:00", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000039}, {"id": 1000040, "data": "2026-06-18", "codigo": "N90500605", "descricao": "", "qtd": 2, "horario": "06:58", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 2, "importado": true, "criadoEm": 1750000000040}, {"id": 1000041, "data": null, "codigo": "04C103761E", "descricao": "", "qtd": null, "horario": "15:21", "hu": false, "ot": false, "turno": ["2"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000041}, {"id": 1000042, "data": "2026-04-04", "codigo": "04C109001D", "descricao": "", "qtd": 3, "horario": "03:57", "hu": false, "ot": true, "turno": ["1", "3"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000042}, {"id": 1000043, "data": "2026-03-05", "codigo": "04E145875F", "descricao": "", "qtd": 1, "horario": "09:03", "hu": false, "ot": true, "turno": ["1", "3"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000043}, {"id": 1000044, "data": "2026-03-05", "codigo": "04E103170R", "descricao": "", "qtd": 1, "horario": "04:50", "hu": false, "ot": true, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000044}, {"id": 1000045, "data": "2026-05-06", "codigo": "04C109121S", "descricao": "", "qtd": 1, "horario": "11:01", "hu": false, "ot": true, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000045}, {"id": 1000046, "data": "2026-05-06", "codigo": "04C109108L", "descricao": "", "qtd": 1, "horario": "11:05", "hu": false, "ot": true, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000046}, {"id": 1000047, "data": "2026-06-02", "codigo": "04G109170R", "descricao": "", "qtd": 1, "horario": "04:40", "hu": false, "ot": true, "turno": [], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000047}, {"id": 1000048, "data": "2026-06-02", "codigo": "04C133062AB", "descricao": "", "qtd": 1, "horario": "05:00", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000048}, {"id": 1000049, "data": "2026-06-02", "codigo": "04E133320BF", "descricao": "", "qtd": 1, "horario": "05:42", "hu": false, "ot": true, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000049}, {"id": 1000050, "data": "2026-06-02", "codigo": "04E1091NAT", "descricao": "", "qtd": 1, "horario": "05:54", "hu": false, "ot": true, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000050}, {"id": 1000051, "data": "2026-06-03", "codigo": "03F919501B", "descricao": "", "qtd": 1, "horario": "07:47", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000051}, {"id": 1000052, "data": "2026-06-03", "codigo": "04C103085A", "descricao": "", "qtd": 10, "horario": "17:06", "hu": false, "ot": false, "turno": ["2"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000052}, {"id": 1000053, "data": "2026-06-03", "codigo": "04E131170M", "descricao": "", "qtd": 1, "horario": "17:03", "hu": false, "ot": true, "turno": ["2"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000053}, {"id": 1000054, "data": "2026-06-04", "codigo": "04C108065AS", "descricao": "", "qtd": 2, "horario": "18:28", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000054}, {"id": 1000055, "data": "2026-06-08", "codigo": "04E133366BR", "descricao": "", "qtd": 20, "horario": "14:23", "hu": false, "ot": true, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000055}, {"id": 1000056, "data": "2026-06-08", "codigo": "04C145853B", "descricao": "", "qtd": 1, "horario": "14:24", "hu": false, "ot": true, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000056}, {"id": 1000057, "data": "2026-06-08", "codigo": "04E145875F", "descricao": "", "qtd": 1, "horario": "14:54", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000057}, {"id": 1000058, "data": "2026-06-08", "codigo": "04E905110R", "descricao": "", "qtd": 3, "horario": "22:30", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000058}, {"id": 1000059, "data": "2026-06-09", "codigo": "04E121042AE", "descricao": "", "qtd": 6, "horario": "15:24", "hu": false, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000059}, {"id": 1000060, "data": "2026-06-09", "codigo": "04C103623F", "descricao": "", "qtd": 1, "horario": "15:44", "hu": true, "ot": false, "turno": ["1"], "caixa": ["plastica"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000060}, {"id": 1000061, "data": "2026-06-10", "codigo": "04E103623AA", "descricao": "", "qtd": 1, "horario": "14:51", "hu": false, "ot": true, "turno": ["1"], "caixa": ["papelao"], "confianca": "Baixa", "pagina": 3, "importado": true, "criadoEm": 1750000000061}];
+  var PAGE_SIZE = 15;
+  var page = 1;
+  var editId = null;
+  var turnoSel = null;
+  var caixaSel = null;
+  var huOn = false, otOn = false;
+
+  /* ---- Tema ---- */
+  var themeToggle = document.getElementById('theme-toggle');
+  function applyThemeUI(){
+    var light = document.documentElement.getAttribute('data-theme') === 'light';
+    document.getElementById('tt-ico').textContent = light ? '☀️' : '🌙';
+    document.getElementById('tt-lbl').textContent = light ? 'Claro' : 'Escuro';
+  }
+  applyThemeUI();
+  themeToggle.addEventListener('click', function(){
+    var light = document.documentElement.getAttribute('data-theme') === 'light';
+    if(light){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('cmrl-theme','dark'); }
+    else{ document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('cmrl-theme','light'); }
+    applyThemeUI();
+    if(window.CMRL_renderDashboard && document.getElementById('view-dashboard').classList.contains('on')) window.CMRL_renderDashboard();
+  });
+
+  /* ---- Relógio ---- */
+  function tickClock(){
+    var d = new Date();
+    var hh = String(d.getHours()).padStart(2,'0');
+    var mm = String(d.getMinutes()).padStart(2,'0');
+    var ss = String(d.getSeconds()).padStart(2,'0');
+    document.getElementById('clock-time').textContent = hh+':'+mm+':'+ss;
+    var meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    document.getElementById('clock-date').textContent = d.getDate()+' de '+meses[d.getMonth()]+' de '+d.getFullYear();
+  }
+  tickClock(); setInterval(tickClock, 1000);
+
+  /* ---- Storage ---- */
+  function loadAll(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    var seeded = REGISTROS_SEED.slice();
+    saveAll(seeded);
+    return seeded;
+  }
+  function saveAll(list){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  var registros = loadAll();
+
+  /* ---- Form: data/hora padrão ---- */
+  function hojeISO(){
+    var d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function agoraHM(){
+    var d = new Date();
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  document.getElementById('f-data').value = hojeISO();
+  document.getElementById('f-horario').value = agoraHM();
+  document.getElementById('btn-agora').addEventListener('click', function(){
+    document.getElementById('f-horario').value = agoraHM();
+  });
+
+  /* ---- Segmentos Turno / Caixa ---- */
+  function bindSeg(containerId, onChange){
+    var el = document.getElementById(containerId);
+    el.querySelectorAll('.seg-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        el.querySelectorAll('.seg-btn').forEach(function(b){ b.classList.remove('on'); });
+        btn.classList.add('on');
+        onChange(btn.getAttribute('data-v'));
+      });
+    });
+  }
+  bindSeg('seg-turno', function(v){ turnoSel = v; });
+  bindSeg('seg-caixa', function(v){ caixaSel = v; });
+
+  /* ---- Checkboxes HU / OT ---- */
+  document.getElementById('chk-hu').addEventListener('click', function(){
+    huOn = !huOn; this.classList.toggle('on', huOn);
+  });
+  document.getElementById('chk-ot').addEventListener('click', function(){
+    otOn = !otOn; this.classList.toggle('on', otOn);
+  });
+
+  function resetForm(){
+    editId = null;
+    document.getElementById('edit-banner').classList.remove('on');
+    document.getElementById('btn-submit').textContent = 'Salvar registro';
+    document.getElementById('f-data').value = hojeISO();
+    document.getElementById('f-codigo').value = '';
+    document.getElementById('f-descricao').value = '';
+    document.getElementById('f-qtd').value = '';
+    document.getElementById('f-horario').value = agoraHM();
+    turnoSel = null; caixaSel = null; huOn = false; otOn = false;
+    document.querySelectorAll('#seg-turno .seg-btn, #seg-caixa .seg-btn').forEach(function(b){ b.classList.remove('on'); });
+    document.getElementById('chk-hu').classList.remove('on');
+    document.getElementById('chk-ot').classList.remove('on');
+    atualizarDescricao();
+  }
+
+  /* ---- Autocomplete de código do material ---- */
+  var inputCodigo = document.getElementById('f-codigo');
+  var inputDescricao = document.getElementById('f-descricao');
+  var descEl = document.getElementById('code-desc');
+  var suggestEl = document.getElementById('code-suggest');
+
+  function atualizarDescricao(){
+    var codigo = inputCodigo.value.trim();
+    if(!window.CMRL || !codigo){
+      descEl.className = 'code-desc';
+      descEl.textContent = '';
+      inputDescricao.value = '';
+      inputDescricao.readOnly = true;
+      return;
+    }
+    var desc = window.CMRL.lookup(codigo);
+    if(desc){
+      descEl.className = 'code-desc found';
+      descEl.textContent = '✔ Descrição encontrada no cadastro';
+      inputDescricao.value = desc;
+      inputDescricao.readOnly = true;
+    }else{
+      descEl.className = 'code-desc notfound';
+      descEl.textContent = 'Código não cadastrado. Digite a descrição manualmente ou cadastre em "Cadastro de Materiais".';
+      inputDescricao.value = '';
+      inputDescricao.readOnly = false;
+    }
+  }
+
+  function mostrarSugestoes(){
+    var q = inputCodigo.value.trim();
+    if(!window.CMRL || q.length < 2){
+      suggestEl.classList.remove('on'); suggestEl.innerHTML = '';
+      return;
+    }
+    var results = window.CMRL.search(q, 8);
+    if(!results.length){
+      suggestEl.classList.remove('on'); suggestEl.innerHTML = '';
+      return;
+    }
+    suggestEl.innerHTML = results.map(function(m){
+      return '<div class="item" data-cod="'+m.codigo.replace(/"/g,'&quot;')+'"><div class="cc">'+m.codigo+'</div><div class="dd">'+m.descricao+'</div></div>';
+    }).join('');
+    suggestEl.classList.add('on');
+    suggestEl.querySelectorAll('.item').forEach(function(it){
+      it.addEventListener('mousedown', function(ev){
+        ev.preventDefault();
+        inputCodigo.value = it.getAttribute('data-cod');
+        suggestEl.classList.remove('on');
+        atualizarDescricao();
+      });
+    });
+  }
+
+  inputCodigo.addEventListener('input', function(){
+    atualizarDescricao();
+    mostrarSugestoes();
+  });
+  inputCodigo.addEventListener('blur', function(){
+    setTimeout(function(){ suggestEl.classList.remove('on'); }, 120);
+  });
+  inputCodigo.addEventListener('focus', mostrarSugestoes);
+
+  /* ---- Submit ---- */
+  var hintEl = document.getElementById('hint');
+  document.getElementById('form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var data = document.getElementById('f-data').value;
+    var codigo = document.getElementById('f-codigo').value.trim().toUpperCase();
+    var qtd = parseInt(document.getElementById('f-qtd').value, 10);
+    var horario = document.getElementById('f-horario').value;
+
+    if(!data || !codigo || !qtd || qtd < 1 || !horario){
+      hintEl.textContent = 'Preencha data, código, quantidade e horário.';
+      hintEl.className = 'hint err';
+      return;
+    }
+    if(!turnoSel){
+      hintEl.textContent = 'Selecione o turno de trabalho.';
+      hintEl.className = 'hint err';
+      return;
+    }
+    if(!caixaSel){
+      hintEl.textContent = 'Selecione o tipo de caixa.';
+      hintEl.className = 'hint err';
+      return;
+    }
+
+    var reg = {
+      id: editId || Date.now(),
+      data: data, codigo: codigo, descricao: document.getElementById('f-descricao').value.trim(),
+      qtd: qtd, horario: horario,
+      hu: huOn, ot: otOn, turno: [turnoSel], caixa: [caixaSel],
+      criadoEm: editId ? (registros.find(function(r){return r.id===editId;})||{}).criadoEm || Date.now() : Date.now()
+    };
+
+    if(editId){
+      registros = registros.map(function(r){ return r.id === editId ? reg : r; });
+    }else{
+      registros.push(reg);
+    }
+    saveAll(registros);
+
+    var eraEdicao = !!editId;
+    resetForm();
+    render();
+    hintEl.textContent = eraEdicao ? '✔ Registro atualizado!' : '✔ Registro salvo com sucesso!';
+    hintEl.className = 'hint ok';
+    setTimeout(function(){ hintEl.textContent = ''; }, 2600);
+  });
+
+  /* ---- Filtros ---- */
+  ['filtro-de','filtro-ate','filtro-turno','filtro-caixa'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', function(){ page = 1; render(); });
+  });
+  document.getElementById('filtro-codigo').addEventListener('input', function(){ page = 1; render(); });
+  document.getElementById('btn-limpar-filtros').addEventListener('click', function(){
+    document.getElementById('filtro-de').value = '';
+    document.getElementById('filtro-ate').value = '';
+    document.getElementById('filtro-turno').value = '';
+    document.getElementById('filtro-caixa').value = '';
+    document.getElementById('filtro-codigo').value = '';
+    page = 1; render();
+  });
+
+  function filtrados(){
+    var de = document.getElementById('filtro-de').value;
+    var ate = document.getElementById('filtro-ate').value;
+    var turno = document.getElementById('filtro-turno').value;
+    var caixa = document.getElementById('filtro-caixa').value;
+    var codigo = document.getElementById('filtro-codigo').value.trim().toUpperCase();
+
+    return registros.filter(function(r){
+      if(de && r.data < de) return false;
+      if(ate && r.data > ate) return false;
+      if(turno && (r.turno||[]).indexOf(turno) === -1) return false;
+      if(caixa && (r.caixa||[]).indexOf(caixa) === -1) return false;
+      if(codigo && r.codigo.indexOf(codigo) === -1) return false;
+      return true;
+    }).sort(function(a,b){
+      if(a.data !== b.data) return a.data < b.data ? 1 : -1;
+      return a.horario < b.horario ? 1 : -1;
+    });
+  }
+
+  var TURNO_LABEL = {'1':'1º Turno','2':'2º Turno','3':'3º Turno'};
+  var CAIXA_LABEL = {'plastica':'Plástica','papelao':'Papelão'};
+
+  function fmtData(iso){
+    if(!iso) return '';
+    var p = iso.split('-');
+    return p[2]+'/'+p[1]+'/'+p[0];
+  }
+
+  function render(){
+    var lista = filtrados();
+
+    /* stats */
+    var totalReg = lista.length;
+    var totalQtd = lista.reduce(function(s,r){ return s + (r.qtd||0); }, 0);
+    var totalHU = lista.filter(function(r){ return r.hu; }).length;
+    var totalOT = lista.filter(function(r){ return r.ot; }).length;
+    document.getElementById('stats').innerHTML =
+      '<div class="stat"><div class="v">'+totalReg+'</div><div class="k">Registros</div></div>' +
+      '<div class="stat"><div class="v">'+totalQtd+'</div><div class="k">Materiais</div></div>' +
+      '<div class="stat"><div class="v">'+totalHU+'</div><div class="k">Com HU</div></div>' +
+      '<div class="stat"><div class="v">'+totalOT+'</div><div class="k">Com OT</div></div>';
+
+    var totalPages = Math.max(1, Math.ceil(lista.length / PAGE_SIZE));
+    if(page > totalPages) page = totalPages;
+    var slice = lista.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+
+    var tbody = document.getElementById('tbody');
+    if(!slice.length){
+      tbody.innerHTML = '';
+      document.getElementById('empty-state').style.display = 'block';
+    }else{
+      document.getElementById('empty-state').style.display = 'none';
+      tbody.innerHTML = slice.map(function(r){
+        var badgeHU = r.hu === true ? '<span class="badge hu">HU</span>' : (r.hu === null ? '<span class="badge unk">HU?</span>' : '');
+        var badgeOT = r.ot === true ? '<span class="badge ot">OT</span>' : (r.ot === null ? '<span class="badge unk">OT?</span>' : '');
+        var marcacoes = (badgeHU + ' ' + badgeOT).trim();
+        if(!marcacoes) marcacoes = '<span style="color:var(--txt-faint)">—</span>';
+        var turnos = (r.turno && r.turno.length) ? r.turno.map(function(t){ return TURNO_LABEL[t]||t; }).join(' / ') : '<span style="color:var(--txt-faint)">—</span>';
+        var caixas = (r.caixa && r.caixa.length) ? r.caixa.map(function(c){ return '<span class="badge '+c+'">'+(CAIXA_LABEL[c]||c)+'</span>'; }).join(' ') : '<span style="color:var(--txt-faint)">—</span>';
+        var origem = r.importado ? ' title="Importado da transcrição manuscrita · pág. '+r.pagina+' · confiança de leitura: '+r.confianca+'"' : '';
+        var selo = r.importado ? ' 📷' : '';
+        return '<tr'+origem+'>' +
+          '<td>'+fmtData(r.data)+selo+'</td>' +
+          '<td><b>'+r.codigo+'</b></td>' +
+          '<td>'+(r.descricao ? r.descricao : '<span style="color:var(--txt-faint)">—</span>')+'</td>' +
+          '<td>'+(r.qtd==null ? '<span style="color:var(--txt-faint)">—</span>' : r.qtd)+'</td>' +
+          '<td>'+(r.horario||'<span style="color:var(--txt-faint)">—</span>')+'</td>' +
+          '<td>'+marcacoes+'</td>' +
+          '<td>'+turnos+'</td>' +
+          '<td>'+caixas+'</td>' +
+          '<td><div class="row-actions">' +
+            '<button class="icon-btn" data-edit="'+r.id+'">✎</button>' +
+            '<button class="icon-btn danger" data-del="'+r.id+'">🗑</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    document.getElementById('pager-info').textContent = lista.length + (lista.length===1 ? ' registro' : ' registros') + ' · página '+page+' de '+totalPages;
+    document.getElementById('pager-prev').disabled = page <= 1;
+    document.getElementById('pager-next').disabled = page >= totalPages;
+
+    tbody.querySelectorAll('[data-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(){ startEdit(parseInt(btn.getAttribute('data-edit'),10)); });
+    });
+    tbody.querySelectorAll('[data-del]').forEach(function(btn){
+      btn.addEventListener('click', function(){ removeReg(parseInt(btn.getAttribute('data-del'),10)); });
+    });
+  }
+
+  function startEdit(id){
+    var r = registros.find(function(x){ return x.id === id; });
+    if(!r) return;
+    editId = id;
+    document.getElementById('edit-banner').classList.add('on');
+    document.getElementById('btn-submit').textContent = 'Atualizar registro';
+    document.getElementById('f-data').value = r.data || hojeISO();
+    document.getElementById('f-codigo').value = r.codigo;
+    document.getElementById('f-qtd').value = r.qtd == null ? '' : r.qtd;
+    document.getElementById('f-horario').value = (r.horario && /^\d{2}:\d{2}$/.test(r.horario)) ? r.horario : agoraHM();
+    turnoSel = (r.turno && r.turno[0]) || null;
+    caixaSel = (r.caixa && r.caixa[0]) || null;
+    huOn = r.hu === true; otOn = r.ot === true;
+    document.querySelectorAll('#seg-turno .seg-btn').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-v') === turnoSel);
+    });
+    document.querySelectorAll('#seg-caixa .seg-btn').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-v') === caixaSel);
+    });
+    document.getElementById('chk-hu').classList.toggle('on', huOn);
+    document.getElementById('chk-ot').classList.toggle('on', otOn);
+    atualizarDescricao();
+    if(r.descricao) document.getElementById('f-descricao').value = r.descricao;
+    if(r.importado){
+      hintEl.textContent = '⚠ Este registro veio da transcrição manuscrita (confiança: '+r.confianca+'). Revise os dados antes de salvar.';
+      hintEl.className = 'hint err';
+    }
+    document.getElementById('form').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function removeReg(id){
+    if(!confirm('Excluir este registro?')) return;
+    registros = registros.filter(function(r){ return r.id !== id; });
+    saveAll(registros);
+    if(editId === id) resetForm();
+    render();
+  }
+
+  document.getElementById('btn-clear-all').addEventListener('click', function(){
+    if(!confirm('Apagar TODOS os registros? Esta ação não pode ser desfeita.')) return;
+    registros = [];
+    saveAll(registros);
+    resetForm();
+    render();
+  });
+
+  document.getElementById('pager-prev').addEventListener('click', function(){ if(page>1){ page--; render(); } });
+  document.getElementById('pager-next').addEventListener('click', function(){ page++; render(); });
+
+  /* ---- Exportar Excel ---- */
+  document.getElementById('btn-xlsx').addEventListener('click', function(){
+    if(typeof XLSX === 'undefined'){ alert('Biblioteca de exportação não carregada. Verifique a conexão.'); return; }
+    var lista = filtrados();
+    var rows = lista.map(function(r){
+      return {
+        'Data': fmtData(r.data),
+        'Código do Material': r.codigo,
+        'Descrição': r.descricao || '',
+        'Quantidade': r.qtd,
+        'Horário': r.horario,
+        'HU': r.hu === true ? 'Sim' : (r.hu === false ? 'Não' : 'Indefinido'),
+        'OT': r.ot === true ? 'Sim' : (r.ot === false ? 'Não' : 'Indefinido'),
+        'Turno': (r.turno||[]).map(function(t){ return TURNO_LABEL[t]||t; }).join(' / '),
+        'Caixa': (r.caixa||[]).map(function(c){ return CAIXA_LABEL[c]||c; }).join(' / ')
+      };
+    });
+    var ws = XLSX.utils.json_to_sheet(rows);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Retorno de Linha');
+    XLSX.writeFile(wb, 'controle_materiais_retorno_linha.xlsx');
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
