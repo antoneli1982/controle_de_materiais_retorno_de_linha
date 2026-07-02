@@ -1719,8 +1719,9 @@ function CMRL_initRegistros(){
 (function(){
   "use strict";
 
-  /* ATENÇÃO: valores copiados do print enviado — confira contra o Firebase Console
-     antes de considerar definitivos, especialmente apiKey e appId. */
+  /* CMRL Sync v3 — GitHub Pages + Firebase Realtime Database.
+     Esta versão NÃO trava a tela em modo local quando o login anônimo falha.
+     Ela tenta: 1) login Anonymous; 2) Realtime Database direto; 3) modo local com diagnóstico claro. */
   var firebaseConfig = {
     apiKey: "AIzaSyA8dJ0FZzZFbuEjjHLtPcXiDGbf85NtyQg",
     authDomain: "controlmaterials.firebaseapp.com",
@@ -1731,6 +1732,7 @@ function CMRL_initRegistros(){
     appId: "1:231845500854:web:a49b5a4453d0c00dde1317"
   };
 
+  var SYNC_VERSION = 'cmrl-sync-v3-github-pages';
   var MAT_KEY = 'cmrl-materiais', MAT_VER_KEY = 'cmrl-materiais-ver', MAT_VERSION = 'v2-pontuado';
   var REG_KEY = 'cmrl-registros', REG_VER_KEY = 'cmrl-registros-ver', REG_VERSION = 'v2-pontuado';
 
@@ -1739,6 +1741,9 @@ function CMRL_initRegistros(){
   var syncStarted = false;
   var listenersAttached = false;
   var syncOnline = false;
+  var triedDbWithoutAuth = false;
+  var lastAuthError = null;
+  var lastDbError = null;
 
   var db = null;
   var matRef = null;
@@ -1753,6 +1758,9 @@ function CMRL_initRegistros(){
   var lastRemoteMateriais = [];
   var lastRemoteRegistros = [];
 
+  window.CMRL_SYNC_VERSION = SYNC_VERSION;
+  window.CMRL_FIREBASE_LAST_ERROR = null;
+
   function cloneList(list){
     try{ return JSON.parse(JSON.stringify(Array.isArray(list) ? list : [])); }
     catch(e){ return Array.isArray(list) ? list.slice() : []; }
@@ -1760,16 +1768,15 @@ function CMRL_initRegistros(){
 
   function toList(val){
     if(!val) return [];
-    return Array.isArray(val) ? val.filter(function(x){ return x != null; }) : Object.keys(val).map(function(k){ return val[k]; }).filter(function(x){ return x != null; });
+    if(Array.isArray(val)) return val.filter(function(x){ return x != null; });
+    return Object.keys(val).map(function(k){ return val[k]; }).filter(function(x){ return x != null; });
   }
 
   function readLocal(key){
     try{
       var raw = localStorage.getItem(key);
       return raw ? JSON.parse(raw) : [];
-    }catch(e){
-      return [];
-    }
+    }catch(e){ return []; }
   }
 
   function writeLocal(key, verKey, version, list){
@@ -1784,14 +1791,8 @@ function CMRL_initRegistros(){
     catch(e){ return false; }
   }
 
-  function norm(v){
-    return String(v == null ? '' : v).trim().toUpperCase();
-  }
-
-  function keyMaterial(item){
-    return norm(item && item.codigo);
-  }
-
+  function norm(v){ return String(v == null ? '' : v).trim().toUpperCase(); }
+  function keyMaterial(item){ return norm(item && item.codigo); }
   function keyRegistro(item){
     if(item && item.id != null) return 'id:' + item.id;
     return 'tmp:' + [item && item.data, item && item.codigo, item && item.horario, item && item.criadoEm].map(norm).join('|');
@@ -1835,9 +1836,9 @@ function CMRL_initRegistros(){
 
     if(!syncOnline){
       setStatus(
-        localReason || '🟠 Modo local — aguardando Firebase',
+        localReason || '🟠 Modo local — tentando sincronizar',
         'warn',
-        'A tela abriu com dados locais. Assim que o Firebase responder, a sincronização será conectada automaticamente.'
+        'A tela abriu com dados locais, mas a sincronização continua tentando conectar ao Firebase.'
       );
     }
 
@@ -1863,19 +1864,36 @@ function CMRL_initRegistros(){
     }
   }
 
+  function firebaseErrorCode(e){
+    return e && e.code ? String(e.code) : '';
+  }
+
   function firebaseErrorMessage(e){
-    var code = e && e.code ? String(e.code) : '';
+    var code = firebaseErrorCode(e);
     var msg = e && e.message ? String(e.message) : String(e || 'Erro desconhecido');
     if(code.indexOf('permission-denied') >= 0 || msg.toLowerCase().indexOf('permission_denied') >= 0){
-      return 'Permissão negada no Realtime Database. Verifique as regras do banco no Firebase.';
+      return 'Permissão negada no Realtime Database. Ajuste as regras do banco no Firebase.';
     }
     if(code.indexOf('operation-not-allowed') >= 0){
       return 'Login anônimo não está habilitado no Firebase Authentication.';
+    }
+    if(code.indexOf('unauthorized-domain') >= 0){
+      return 'Domínio não autorizado no Firebase Authentication. Adicione antoneli1982.github.io em Authorized domains.';
+    }
+    if(code.indexOf('invalid-api-key') >= 0){
+      return 'API key inválida ou restrita. Confira a configuração Web App no Firebase.';
+    }
+    if(code.indexOf('network-request-failed') >= 0){
+      return 'Falha de rede ao conectar no Firebase.';
     }
     if(code.indexOf('auth/') === 0){
       return 'Falha no Firebase Authentication: ' + msg;
     }
     return msg;
+  }
+
+  function rememberError(e){
+    window.CMRL_FIREBASE_LAST_ERROR = e || null;
   }
 
   function pushList(ref, list, label){
@@ -1891,8 +1909,10 @@ function CMRL_initRegistros(){
       }
       setStatus('🟢 Sincronizado com a nuvem', 'ok', 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.');
     }).catch(function(e){
+      lastDbError = e;
+      rememberError(e);
       console.error('[Firebase] Falha ao gravar '+label+':', e);
-      setStatus('🔴 Erro ao sincronizar', 'err', firebaseErrorMessage(e));
+      setStatus('🔴 Erro ao gravar na nuvem', 'err', firebaseErrorMessage(e));
     });
   }
 
@@ -1927,8 +1947,10 @@ function CMRL_initRegistros(){
       lastRemoteMateriais = cloneList(list);
       if(!dirtyMateriais) applyMateriais(list);
     }, function(e){
+      lastDbError = e;
+      rememberError(e);
       console.error('[Firebase] Erro no listener de materiais:', e);
-      setStatus('🔴 Erro ao ler nuvem', 'err', firebaseErrorMessage(e));
+      setStatus('🔴 Erro ao ler materiais', 'err', firebaseErrorMessage(e));
     });
 
     regRef.on('value', function(snap){
@@ -1936,8 +1958,10 @@ function CMRL_initRegistros(){
       lastRemoteRegistros = cloneList(list);
       if(!dirtyRegistros) applyRegistros(list);
     }, function(e){
+      lastDbError = e;
+      rememberError(e);
       console.error('[Firebase] Erro no listener de registros:', e);
-      setStatus('🔴 Erro ao ler nuvem', 'err', firebaseErrorMessage(e));
+      setStatus('🔴 Erro ao ler registros', 'err', firebaseErrorMessage(e));
     });
 
     connectedRef.on('value', function(snap){
@@ -1948,7 +1972,7 @@ function CMRL_initRegistros(){
         if(dirtyMateriais && pendingMateriais) pushList(matRef, pendingMateriais, 'materiais');
         if(dirtyRegistros && pendingRegistros) pushList(regRef, pendingRegistros, 'registros');
       }else{
-        setStatus('🟠 Reconectando…', 'warn', 'Conexão com o Firebase perdida. As mudanças ficam locais e serão reenviadas quando a conexão voltar.');
+        setStatus('🟠 Reconectando Firebase…', 'warn', 'Conexão perdida. As mudanças ficam locais e serão reenviadas quando a conexão voltar.');
       }
     });
   }
@@ -1960,12 +1984,9 @@ function CMRL_initRegistros(){
     lastRemoteRegistros = cloneList(cloudReg);
 
     if(seeded){
-      if(appStarted && dirtyMateriais && pendingMateriais){
-        cloudMat = mergeByKey(cloudMat, pendingMateriais, keyMaterial);
-      }
-      if(appStarted && dirtyRegistros && pendingRegistros){
-        cloudReg = mergeByKey(cloudReg, pendingRegistros, keyRegistro);
-      }
+      if(appStarted && dirtyMateriais && pendingMateriais) cloudMat = mergeByKey(cloudMat, pendingMateriais, keyMaterial);
+      if(appStarted && dirtyRegistros && pendingRegistros) cloudReg = mergeByKey(cloudReg, pendingRegistros, keyRegistro);
+
       applyMateriais(cloudMat);
       applyRegistros(cloudReg);
       if(!appStarted) startApp();
@@ -1990,7 +2011,7 @@ function CMRL_initRegistros(){
     });
   }
 
-  function setupFirebaseSync(){
+  function setupFirebaseSync(mode){
     if(syncStarted) return;
     syncStarted = true;
 
@@ -1999,7 +2020,11 @@ function CMRL_initRegistros(){
     seededRef = db.ref('meta/seeded');
     connectedRef = db.ref('.info/connected');
 
-    setStatus('🟡 Conectando ao Firebase…', 'warn', 'Validando acesso ao Firebase Realtime Database.');
+    setStatus(
+      mode === 'anonymous' ? '🟡 Firebase autenticado — sincronizando…' : '🟡 Testando Realtime Database…',
+      'warn',
+      'Lendo materiais e registros no Firebase Realtime Database.'
+    );
 
     Promise.all([
       seededRef.once('value'),
@@ -2015,14 +2040,42 @@ function CMRL_initRegistros(){
       setStatus('🟢 Sincronizado com a nuvem', 'ok', 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.');
       attachListeners();
     }).catch(function(e){
+      lastDbError = e;
+      rememberError(e);
       console.error('[Firebase] Erro ao sincronizar dados iniciais:', e);
-      setStatus('🔴 Firebase sem permissão', 'err', firebaseErrorMessage(e));
-      startApp('🔴 Modo local — Firebase sem permissão');
+      syncStarted = false;
+
+      var code = firebaseErrorCode(e);
+      if(code.indexOf('permission-denied') >= 0 || String(e && e.message || '').toLowerCase().indexOf('permission_denied') >= 0){
+        setStatus(
+          '🔴 Banco Firebase bloqueado',
+          'err',
+          'Realtime Database negou leitura/gravação. Corrija Rules ou habilite Anonymous no Authentication.'
+        );
+        startApp('🔴 Modo local — banco Firebase bloqueado');
+        return;
+      }
+
+      setStatus('🔴 Firebase não conectou', 'err', firebaseErrorMessage(e));
+      startApp('🔴 Modo local — Firebase não conectou');
     });
+  }
+
+  function tryDatabaseWithoutAuth(reason){
+    if(triedDbWithoutAuth) return;
+    triedDbWithoutAuth = true;
+    console.warn('[Firebase] Tentando sincronizar sem login Anonymous:', reason || 'sem motivo informado');
+    setStatus(
+      '🟡 Login bloqueado — testando banco…',
+      'warn',
+      'O Authentication falhou, mas a ferramenta ainda está testando o Realtime Database.'
+    );
+    setupFirebaseSync('no-auth');
   }
 
   if(typeof firebase === 'undefined'){
     console.error('[Firebase] SDK não carregou. Abrindo com dados locais.');
+    setStatus('🔴 SDK Firebase não carregou', 'err', 'O JavaScript do Firebase não foi carregado.');
     startApp('🔴 Modo local — SDK Firebase não carregou');
     return;
   }
@@ -2034,6 +2087,7 @@ function CMRL_initRegistros(){
     }
     db = firebase.database();
   }catch(e){
+    rememberError(e);
     console.error('[Firebase] Erro ao iniciar app:', e);
     setStatus('🔴 Erro ao iniciar Firebase', 'err', firebaseErrorMessage(e));
     startApp('🔴 Modo local — erro no Firebase');
@@ -2041,30 +2095,50 @@ function CMRL_initRegistros(){
   }
 
   var fallbackTimer = setTimeout(function(){
-    console.warn('[Firebase] Inicialização lenta. Abrindo a interface em modo local e mantendo tentativa de sincronização.');
+    console.warn('[Firebase] Inicialização lenta. Abrindo interface local e mantendo tentativa de sync.');
     startApp('🟠 Modo local — tentando sincronizar');
   }, 8000);
 
-  try{
-    firebase.auth().signInAnonymously().catch(function(e){
-      clearTimeout(fallbackTimer);
-      console.error('[Firebase] Erro no login anônimo:', e);
-      setStatus('🔴 Login anônimo bloqueado', 'err', firebaseErrorMessage(e));
-      startApp('🔴 Modo local — login Firebase bloqueado');
-    });
+  setStatus('🟡 Sync v3 — conectando Firebase…', 'warn', 'Tentando Firebase Authentication e Realtime Database.');
 
-    firebase.auth().onAuthStateChanged(function(user){
-      if(!user) return;
-      clearTimeout(fallbackTimer);
-      setupFirebaseSync();
-    });
+  try{
+    if(firebase.auth && typeof firebase.auth === 'function'){
+      var auth = firebase.auth();
+
+      auth.onAuthStateChanged(function(user){
+        if(user && !syncStarted){
+          clearTimeout(fallbackTimer);
+          setupFirebaseSync('anonymous');
+        }
+      }, function(e){
+        lastAuthError = e;
+        rememberError(e);
+        console.error('[Firebase] onAuthStateChanged falhou:', e);
+        tryDatabaseWithoutAuth(e);
+      });
+
+      auth.signInAnonymously().then(function(){
+        if(!syncStarted){
+          clearTimeout(fallbackTimer);
+          setupFirebaseSync('anonymous');
+        }
+      }).catch(function(e){
+        lastAuthError = e;
+        rememberError(e);
+        console.error('[Firebase] Login anônimo falhou:', e);
+        tryDatabaseWithoutAuth(e);
+      });
+    }else{
+      tryDatabaseWithoutAuth('SDK Authentication indisponível');
+    }
   }catch(e){
-    clearTimeout(fallbackTimer);
+    lastAuthError = e;
+    rememberError(e);
     console.error('[Firebase] Erro no Authentication:', e);
-    setStatus('🔴 Erro no Authentication', 'err', firebaseErrorMessage(e));
-    startApp('🔴 Modo local — erro no Authentication');
+    tryDatabaseWithoutAuth(e);
   }
 })();
 </script>
+
 </body>
 </html>
