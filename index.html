@@ -695,13 +695,16 @@
 
   function norm(s){ return (s||'').toString().trim().toUpperCase().replace(/\s+/g,' '); }
 
+  var MAT_SEED_VERSION = 'v2-pontuado';
   function loadMat(){
     try{
+      var storedVer = localStorage.getItem(MAT_KEY+'-ver');
       var raw = localStorage.getItem(MAT_KEY);
-      if(raw) return JSON.parse(raw);
+      if(raw && storedVer === MAT_SEED_VERSION) return JSON.parse(raw);
     }catch(e){}
     var seeded = MAT_SEED.map(function(m){ return {codigo: m.codigo, descricao: m.descricao}; });
     saveMat(seeded);
+    try{ localStorage.setItem(MAT_KEY+'-ver', MAT_SEED_VERSION); }catch(e){}
     return seeded;
   }
   function saveMat(list){ try{ localStorage.setItem(MAT_KEY, JSON.stringify(list)); }catch(e){} }
@@ -1185,13 +1188,16 @@
   tickClock(); setInterval(tickClock, 1000);
 
   /* ---- Storage ---- */
+  var REG_SEED_VERSION = 'v2-pontuado';
   function loadAll(){
     try{
+      var storedVer = localStorage.getItem(STORAGE_KEY+'-ver');
       var raw = localStorage.getItem(STORAGE_KEY);
-      if(raw) return JSON.parse(raw);
+      if(raw && storedVer === REG_SEED_VERSION) return JSON.parse(raw);
     }catch(e){}
     var seeded = REGISTROS_SEED.slice();
     saveAll(seeded);
+    try{ localStorage.setItem(STORAGE_KEY+'-ver', REG_SEED_VERSION); }catch(e){}
     return seeded;
   }
   function saveAll(list){
