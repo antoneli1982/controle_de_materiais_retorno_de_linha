@@ -270,6 +270,19 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     border-radius:2px;padding:4px 8px;font-size:11px;transition:.13s}
   .icon-btn:hover{border-color:var(--yellow);color:var(--yellow)}
   .icon-btn.danger:hover{border-color:var(--red);color:var(--red)}
+  @media(max-width:700px){
+    #tabela{min-width:0}
+    #tabela thead{display:none}
+    #tabela, #tabela tbody, #tabela tr, #tabela td{display:block;width:auto}
+    #tabela tr{border:1px solid var(--line-soft);border-radius:6px;padding:10px 12px;margin:0 0 10px;background:var(--panel-2)}
+    #tabela tr:hover{background:var(--panel-2)}
+    #tabela td{padding:5px 0;border:none;white-space:normal;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;font-size:12.5px}
+    #tabela td::before{content:attr(data-label);color:var(--txt-faint);font-family:var(--font-head);font-size:9.5px;font-weight:500;text-transform:uppercase;letter-spacing:1px;flex:0 0 auto;padding-top:2px}
+    #tabela td.acoes-cell{display:block;padding-top:10px;margin-top:8px;border-top:1px solid var(--line-soft)}
+    #tabela td.acoes-cell::before{display:none}
+    #tabela td.acoes-cell .row-actions{gap:10px}
+    #tabela td.acoes-cell .icon-btn{flex:1;text-align:center;padding:11px;font-size:13px}
+  }
 
   .empty{padding:46px 20px;text-align:center;color:var(--txt-faint)}
   .empty .big{font-size:30px;margin-bottom:8px;opacity:.5}
@@ -656,6 +669,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         </select>
         <button type="button" class="btn-ghost" id="btn-limpar-filtros">Limpar filtros</button>
         <span style="flex:1"></span>
+        <label class="file-label">⬆ Importar Excel<input type="file" id="reg-import" accept=".xlsx,.xls,.csv" style="display:none"></label>
         <button type="button" class="btn-ghost primary" id="btn-xlsx">⬇ Exportar Excel</button>
         <button type="button" class="btn-ghost danger" id="btn-clear-all">Apagar tudo</button>
       </div>
@@ -664,7 +678,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           <thead>
             <tr>
               <th>Data</th><th>Código</th><th>Descrição</th><th>Qtd</th><th>Horário</th>
-              <th>HU/OT</th><th>Turno</th><th>Caixa</th><th></th>
+              <th>HU/OT</th><th>Turno</th><th>Caixa</th><th>Ações</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -1679,17 +1693,17 @@ function CMRL_initRegistros(){
         var origem = r.importado ? ' title="Importado da transcrição manuscrita · pág. '+r.pagina+' · confiança de leitura: '+r.confianca+'"' : '';
         var selo = r.importado ? ' 📷' : '';
         return '<tr'+origem+'>' +
-          '<td>'+fmtData(r.data)+selo+'</td>' +
-          '<td><b>'+r.codigo+'</b></td>' +
-          '<td>'+(r.descricao ? r.descricao : '<span style="color:var(--txt-faint)">—</span>')+'</td>' +
-          '<td>'+(r.qtd==null ? '<span style="color:var(--txt-faint)">—</span>' : r.qtd)+'</td>' +
-          '<td>'+(r.horario||'<span style="color:var(--txt-faint)">—</span>')+'</td>' +
-          '<td>'+marcacoes+'</td>' +
-          '<td>'+turnos+'</td>' +
-          '<td>'+caixas+'</td>' +
-          '<td><div class="row-actions">' +
-            '<button class="icon-btn" data-edit="'+r.id+'">✎</button>' +
-            '<button class="icon-btn danger" data-del="'+r.id+'">🗑</button>' +
+          '<td data-label="Data">'+fmtData(r.data)+selo+'</td>' +
+          '<td data-label="Código"><b>'+r.codigo+'</b></td>' +
+          '<td data-label="Descrição">'+(r.descricao ? r.descricao : '<span style="color:var(--txt-faint)">—</span>')+'</td>' +
+          '<td data-label="Qtd">'+(r.qtd==null ? '<span style="color:var(--txt-faint)">—</span>' : r.qtd)+'</td>' +
+          '<td data-label="Horário">'+(r.horario||'<span style="color:var(--txt-faint)">—</span>')+'</td>' +
+          '<td data-label="HU/OT">'+marcacoes+'</td>' +
+          '<td data-label="Turno">'+turnos+'</td>' +
+          '<td data-label="Caixa">'+caixas+'</td>' +
+          '<td data-label="Ações" class="acoes-cell"><div class="row-actions">' +
+            '<button class="icon-btn" data-edit="'+r.id+'">✎ Editar</button>' +
+            '<button class="icon-btn danger" data-del="'+r.id+'">🗑 Excluir</button>' +
           '</div></td>' +
         '</tr>';
       }).join('');
@@ -1778,6 +1792,126 @@ function CMRL_initRegistros(){
     XLSX.utils.book_append_sheet(wb, ws, 'Retorno de Linha');
     baixarXlsx(wb, 'controle_materiais_retorno_linha.xlsx');
   });
+
+  /* ---- Importar Excel (registros) ---- */
+  document.getElementById('reg-import').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    if(typeof XLSX === 'undefined'){ alert('Biblioteca de importação não carregada. Verifique a conexão.'); return; }
+    var inputEl = document.getElementById('reg-import');
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var wb = XLSX.read(ev.target.result, {type:'array', cellDates:true});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        if(!rows.length){ alert('Planilha vazia.'); inputEl.value=''; return; }
+
+        var head = (rows[0]||[]).map(function(c){ return (c==null?'':c).toString().trim().toLowerCase(); });
+        function col(){
+          var termos = Array.prototype.slice.call(arguments);
+          for(var i=0;i<head.length;i++){
+            for(var j=0;j<termos.length;j++){ if(head[i].indexOf(termos[j])!==-1) return i; }
+          }
+          return -1;
+        }
+        var idxData=col('data'), idxCod=col('cód','cod','material'), idxDesc=col('descri','texto'),
+            idxQtd=col('quant','qtd'), idxHora=col('horár','horar','hora'),
+            idxHU=col('hu'), idxOT=col('ot'), idxTurno=col('turno'), idxCaixa=col('caixa');
+
+        var temCabecalho = (idxCod !== -1 || idxData !== -1);
+        var start = temCabecalho ? 1 : 0;
+        if(!temCabecalho){ idxData=0; idxCod=1; idxDesc=2; idxQtd=3; idxHora=4; idxHU=5; idxOT=6; idxTurno=7; idxCaixa=8; }
+
+        function get(row, idx){ return (idx===-1 || !row) ? '' : (row[idx]==null?'':row[idx]); }
+        function pad2(n){ return String(n).padStart(2,'0'); }
+
+        function parseData(v){
+          if(v==null || v==='') return null;
+          if(v instanceof Date && !isNaN(v)) return v.getFullYear()+'-'+pad2(v.getMonth()+1)+'-'+pad2(v.getDate());
+          var s = v.toString().trim();
+          if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+          var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+          if(m){ var ano = m[3].length===2 ? ('20'+m[3]) : m[3]; return ano+'-'+pad2(+m[2])+'-'+pad2(+m[1]); }
+          var m2 = s.match(/^(\d{1,2})\/(\d{1,2})$/);
+          if(m2){ var h=new Date(); return h.getFullYear()+'-'+pad2(+m2[2])+'-'+pad2(+m2[1]); }
+          return null;
+        }
+        function parseHora(v){
+          if(v==null || v==='') return null;
+          if(v instanceof Date && !isNaN(v)) return pad2(v.getHours())+':'+pad2(v.getMinutes());
+          if(typeof v === 'number'){ var tot=Math.round(v*24*60); return pad2(Math.floor(tot/60)%24)+':'+pad2(tot%60); }
+          var s = v.toString().trim();
+          var m = s.match(/(\d{1,2}):(\d{2})/);
+          if(m) return pad2(+m[1])+':'+m[2];
+          return s || null;
+        }
+        function parseBool(v){
+          var s = (v==null?'':v).toString().trim().toLowerCase();
+          if(s==='sim'||s==='s'||s==='yes'||s==='y'||s==='1'||s==='true'||s==='verdadeiro'||s==='x') return true;
+          return false;
+        }
+        function parseTurno(v){
+          var out=[]; (v==null?'':v).toString().split(/[\/,;]+/).forEach(function(p){
+            var d=(p.match(/[123]/)||[])[0]; if(d && out.indexOf(d)===-1) out.push(d);
+          }); return out;
+        }
+        function parseCaixa(v){
+          var out=[]; (v==null?'':v).toString().toLowerCase().split(/[\/,;]+/).forEach(function(p){
+            var t=p.trim(); if(!t) return; var code=null;
+            if(t.indexOf('plast')!==-1 || t.indexOf('plást')!==-1) code='plastica';
+            else if(t.indexOf('papel')!==-1) code='papelao';
+            if(code && out.indexOf(code)===-1) out.push(code);
+          }); return out;
+        }
+
+        var base = Date.now();
+        registros.forEach(function(r){ if(typeof r.id==='number' && r.id>=base) base=r.id+1; });
+        var novos=[], ignoradas=0;
+        for(var i=start;i<rows.length;i++){
+          var row = rows[i];
+          var codigo = get(row, idxCod).toString().trim();
+          var dataISO = parseData(get(row, idxData));
+          var vazia = !codigo && !dataISO && !get(row,idxDesc).toString().trim() &&
+                      !get(row,idxQtd).toString().trim() && !get(row,idxHora).toString().trim();
+          if(vazia) continue;
+          if(!codigo){ ignoradas++; continue; }
+          var qtdRaw = get(row, idxQtd).toString().trim().replace(',', '.');
+          var qtd = qtdRaw==='' ? null : (isNaN(parseFloat(qtdRaw)) ? null : parseFloat(qtdRaw));
+          novos.push({
+            id: base + i,
+            data: dataISO,
+            codigo: codigo,
+            descricao: get(row, idxDesc).toString().trim(),
+            qtd: qtd,
+            horario: parseHora(get(row, idxHora)),
+            hu: parseBool(get(row, idxHU)),
+            ot: parseBool(get(row, idxOT)),
+            turno: parseTurno(get(row, idxTurno)),
+            caixa: parseCaixa(get(row, idxCaixa)),
+            criadoEm: base + i
+          });
+        }
+
+        if(!novos.length){ alert('Nenhum registro válido encontrado. Verifique se há uma coluna de Código (mesmo formato do Exportar Excel).'); inputEl.value=''; return; }
+
+        var msg = novos.length+' registro(s) serão adicionados' + (ignoradas ? ' ('+ignoradas+' linha(s) sem código foram ignoradas)' : '') + '. Deseja continuar?';
+        if(!confirm(msg)){ inputEl.value=''; return; }
+
+        registros = registros.concat(novos);
+        saveAll(registros);
+        if(typeof ultimaData !== 'undefined' && novos[novos.length-1].data) ultimaData = novos[novos.length-1].data;
+        if(typeof page !== 'undefined') page = 1;
+        render();
+        alert('Importação concluída: '+novos.length+' registro(s) adicionado(s)' + (ignoradas ? ', '+ignoradas+' ignorada(s).' : '.'));
+      }catch(err){
+        alert('Não foi possível ler o arquivo. Verifique se é um Excel/CSV válido no mesmo formato do "Exportar Excel".');
+      }
+      inputEl.value='';
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
 
   render();
 }
