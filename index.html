@@ -123,9 +123,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
     background-size:auto,44px 44px,44px 44px;
     color:var(--txt);font-family:var(--font-body);
-    min-height:100vh;padding:26px 20px 60px;overflow-x:hidden;max-width:100vw;
+    min-height:100vh;padding:24px 14px 56px;overflow-x:hidden;max-width:100vw;
   }
-  .wrap{max-width:1180px;margin:0 auto}
+  .wrap{max-width:1600px;margin:0 auto}
   header{display:flex;align-items:center;justify-content:space-between;gap:20px;
     flex-wrap:wrap;border-bottom:2px solid var(--blue);padding-bottom:18px;margin-bottom:22px}
   .brand{display:flex;align-items:center;gap:16px}
@@ -251,11 +251,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .toolbar .btn-ghost.danger{color:var(--red);border-color:rgba(229,72,77,.4)}
 
   .table-scroll{overflow-x:auto}
-  table{width:100%;border-collapse:collapse;min-width:760px}
+  table{width:100%;border-collapse:collapse}
   thead th{text-align:left;font-family:var(--font-head);font-size:9.5px;font-weight:500;
     text-transform:uppercase;letter-spacing:1px;color:var(--txt-faint);padding:10px 12px;
-    border-bottom:1px solid var(--line-soft);white-space:nowrap}
-  tbody td{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--line-soft);white-space:nowrap;font-family:var(--font-mono)}
+    border-bottom:1px solid var(--line-soft);white-space:normal}
+  tbody td{padding:9px 10px;font-size:12px;border-bottom:1px solid var(--line-soft);white-space:normal;word-break:break-word;font-family:var(--font-mono);vertical-align:top}
   tbody tr:hover{background:var(--panel-2)}
   .badge{display:inline-block;font-family:var(--font-head);font-size:9.5px;font-weight:500;padding:2px 7px;border-radius:2px;
     letter-spacing:.6px;text-transform:uppercase}
@@ -337,6 +337,24 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .color-item input[type=color]{width:44px;height:30px;padding:0;border:1px solid var(--line);
     border-radius:3px;background:none;cursor:pointer}
   .color-form .btn-ghost{margin-left:auto;align-self:center}
+
+  /* ---- Filtros do dashboard ---- */
+  .dash-filtros{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;padding:14px 16px}
+  .f-item{display:flex;flex-direction:column;gap:5px;flex:1 1 150px;min-width:120px}
+  .f-item.f-periodo{flex:1 1 320px}
+  .f-item.f-busca{flex:2 1 240px}
+  .f-item>span{font-size:10.5px;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.5px}
+  .f-range{display:flex;align-items:center;gap:6px}
+  .f-range input{flex:1 1 0}
+  .f-range .f-sep{font-size:11px;color:var(--txt-faint)}
+  .dash-filtros .f-actions{display:flex;align-items:center;margin-left:auto}
+  .dash-filtros .btn-ghost{cursor:pointer;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--txt-dim);border-radius:3px;padding:9px 15px;font-family:var(--font-head);
+    font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  .dash-filtros .btn-ghost:hover{border-color:var(--yellow);color:var(--txt)}
+  .f-resumo{padding:0 16px 14px;font-size:12px;color:var(--txt-dim)}
+  .f-resumo b{color:var(--txt)}
+  .f-resumo.on b{color:var(--yellow-deep)}
 
   /* ---- Cadastro de materiais ---- */
   .cad-form{display:grid;grid-template-columns:200px 1fr auto;gap:8px;padding:14px 16px;
@@ -708,6 +726,56 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     <div class="dash-kpis" id="dash-kpis"></div>
 
     <div class="dash-alert" id="dash-alert" style="display:none"></div>
+
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head"><span class="tag">FILTROS</span><h2>Filtrar dados do painel</h2></div>
+      <div class="dash-filtros" id="dash-filtros">
+        <label class="f-item f-periodo"><span>Período</span>
+          <div class="f-range">
+            <input type="date" id="f-data-de" aria-label="Data inicial">
+            <span class="f-sep">até</span>
+            <input type="date" id="f-data-ate" aria-label="Data final">
+          </div>
+        </label>
+        <label class="f-item"><span>Turno</span>
+          <select id="f-turno">
+            <option value="">Todos</option>
+            <option value="1">1º Turno</option>
+            <option value="2">2º Turno</option>
+            <option value="3">3º Turno</option>
+          </select>
+        </label>
+        <label class="f-item"><span>Tipo de caixa</span>
+          <select id="f-caixa">
+            <option value="">Todas</option>
+            <option value="plastica">Plástica</option>
+            <option value="papelao">Papelão</option>
+          </select>
+        </label>
+        <label class="f-item"><span>Marcação</span>
+          <select id="f-marc">
+            <option value="">Todas</option>
+            <option value="hu">Com HU</option>
+            <option value="ot">Com OT</option>
+            <option value="huot">Com HU e OT</option>
+          </select>
+        </label>
+        <label class="f-item"><span>Origem</span>
+          <select id="f-origem">
+            <option value="">Todas</option>
+            <option value="imp">Importados (formulário)</option>
+            <option value="dig">Digitados no app</option>
+          </select>
+        </label>
+        <label class="f-item f-busca"><span>Buscar código ou descrição</span>
+          <input type="text" id="f-busca" placeholder="Ex.: 12345 ou parafuso" autocomplete="off">
+        </label>
+        <div class="f-actions">
+          <button type="button" class="btn-ghost" id="f-limpar">Limpar filtros</button>
+        </div>
+      </div>
+      <div class="f-resumo" id="f-resumo"></div>
+    </div>
 
     <div class="panel" style="margin-bottom:16px">
       <div class="panel-head"><span class="tag">PERSONALIZAR</span><h2>Cores dos gráficos</h2></div>
@@ -1109,9 +1177,113 @@ function CMRL_initDashboard(){
     return p[2]+'/'+p[1];
   }
 
+  /* ---- Filtros ---- */
+  function lerFiltros(){
+    function val(id){ var el = document.getElementById(id); return el ? el.value : ''; }
+    return {
+      de: val('f-data-de'), ate: val('f-data-ate'),
+      turno: val('f-turno'), caixa: val('f-caixa'),
+      marc: val('f-marc'), origem: val('f-origem'),
+      busca: (val('f-busca') || '').trim().toLowerCase()
+    };
+  }
+  function filtrosAtivos(f){
+    return !!(f.de || f.ate || f.turno || f.caixa || f.marc || f.origem || f.busca);
+  }
+  function aplicarFiltros(regs){
+    var f = lerFiltros();
+    return regs.filter(function(r){
+      if(f.de && (!r.data || r.data < f.de)) return false;
+      if(f.ate && (!r.data || r.data > f.ate)) return false;
+      if(f.turno && (r.turno || []).indexOf(f.turno) < 0) return false;
+      if(f.caixa && (r.caixa || []).indexOf(f.caixa) < 0) return false;
+      if(f.marc === 'hu' && r.hu !== true) return false;
+      if(f.marc === 'ot' && r.ot !== true) return false;
+      if(f.marc === 'huot' && !(r.hu === true && r.ot === true)) return false;
+      if(f.origem === 'imp' && !r.importado) return false;
+      if(f.origem === 'dig' && r.importado) return false;
+      if(f.busca){
+        var hay = ((r.codigo || '') + ' ' + (r.descricao || '')).toLowerCase();
+        if(hay.indexOf(f.busca) < 0) return false;
+      }
+      return true;
+    });
+  }
+  function atualizarResumo(mostrados, totalGeral){
+    var el = document.getElementById('f-resumo');
+    if(!el) return;
+    if(filtrosAtivos(lerFiltros())){
+      el.className = 'f-resumo on';
+      el.innerHTML = 'Filtros aplicados — exibindo <b>' + mostrados + '</b> de <b>' + totalGeral + '</b> registros.';
+    }else{
+      el.className = 'f-resumo';
+      el.innerHTML = 'Exibindo <b>todos</b> os ' + totalGeral + ' registros.';
+    }
+  }
+  function initFiltros(){
+    var ids = ['f-data-de','f-data-ate','f-turno','f-caixa','f-marc','f-origem'];
+    ids.forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.addEventListener('change', renderDashboard);
+    });
+    var busca = document.getElementById('f-busca');
+    if(busca) busca.addEventListener('input', renderDashboard);
+    var limpar = document.getElementById('f-limpar');
+    if(limpar) limpar.addEventListener('click', function(){
+      ids.forEach(function(id){ var el = document.getElementById(id); if(el) el.value = ''; });
+      if(busca) busca.value = '';
+      renderDashboard();
+    });
+  }
+
+  /* ---- Rótulos de valor sobre os gráficos ---- */
+  var valueLabels = {
+    id:'cmrlValueLabels',
+    afterDatasetsDraw: function(chart){
+      var ctx = chart.ctx;
+      var type = chart.config.type;
+      var isArc = (type === 'doughnut' || type === 'pie');
+      var horizontal = chart.options && chart.options.indexAxis === 'y';
+      ctx.save();
+      ctx.font = '600 10px Poppins, sans-serif';
+      ctx.textBaseline = 'middle';
+      chart.data.datasets.forEach(function(ds, di){
+        var meta = chart.getDatasetMeta(di);
+        if(meta.hidden) return;
+        meta.data.forEach(function(el, i){
+          var v = ds.data[i];
+          if(v === null || v === undefined) return;
+          if(isArc && !v) return;
+          var pos = el.tooltipPosition ? el.tooltipPosition() : {x:el.x, y:el.y};
+          var x = pos.x, y = pos.y;
+          if(isArc){
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+          } else if(horizontal){
+            x = (el.x != null ? el.x : pos.x) + 6; ctx.fillStyle = textColor(); ctx.textAlign = 'left';
+          } else {
+            y = (el.y != null ? el.y : pos.y) - 9; ctx.fillStyle = textColor(); ctx.textAlign = 'center';
+          }
+          ctx.fillText(String(v), x, y);
+        });
+      });
+      ctx.restore();
+    }
+  };
+  var valueLabelsRegistered = false;
+  function ensureValueLabels(){
+    if(!valueLabelsRegistered && typeof Chart !== 'undefined'){
+      Chart.register(valueLabels);
+      valueLabelsRegistered = true;
+    }
+  }
+
   function renderDashboard(){
     var chartsOk = typeof Chart !== 'undefined';
+    if(chartsOk) ensureValueLabels();
     var registros = loadRegistros();
+    var totalGeral = registros.length;
+    registros = aplicarFiltros(registros);
+    atualizarResumo(registros.length, totalGeral);
 
     /* ---- KPIs ---- */
     var total = registros.length;
@@ -1306,6 +1478,7 @@ function CMRL_initDashboard(){
 
   window.CMRL_renderDashboard = renderDashboard;
   initColorInputs();
+  initFiltros();
 }
 </script>
 <script>
