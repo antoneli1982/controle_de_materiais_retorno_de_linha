@@ -1719,7 +1719,7 @@ function CMRL_initRegistros(){
 (function(){
   "use strict";
 
-  /* CMRL Sync v3 — GitHub Pages + Firebase Realtime Database.
+  /* CMRL Sync v4 — GitHub Pages + Firebase Realtime Database.
      Esta versão NÃO trava a tela em modo local quando o login anônimo falha.
      Ela tenta: 1) login Anonymous; 2) Realtime Database direto; 3) modo local com diagnóstico claro. */
   var firebaseConfig = {
@@ -1732,7 +1732,7 @@ function CMRL_initRegistros(){
     appId: "1:231845500854:web:a49b5a4453d0c00dde1317"
   };
 
-  var SYNC_VERSION = 'cmrl-sync-v3-github-pages';
+  var SYNC_VERSION = 'cmrl-sync-v4-database-first';
   var MAT_KEY = 'cmrl-materiais', MAT_VER_KEY = 'cmrl-materiais-ver', MAT_VERSION = 'v2-pontuado';
   var REG_KEY = 'cmrl-registros', REG_VER_KEY = 'cmrl-registros-ver', REG_VERSION = 'v2-pontuado';
 
@@ -2021,7 +2021,7 @@ function CMRL_initRegistros(){
     connectedRef = db.ref('.info/connected');
 
     setStatus(
-      mode === 'anonymous' ? '🟡 Firebase autenticado — sincronizando…' : '🟡 Testando Realtime Database…',
+      mode === 'anonymous' ? '🟡 Firebase autenticado — sincronizando…' : (mode === 'database-first' ? '🟡 Sync v4 — lendo banco Firebase…' : '🟡 Testando Realtime Database…'),
       'warn',
       'Lendo materiais e registros no Firebase Realtime Database.'
     );
@@ -2099,7 +2099,12 @@ function CMRL_initRegistros(){
     startApp('🟠 Modo local — tentando sincronizar');
   }, 8000);
 
-  setStatus('🟡 Sync v3 — conectando Firebase…', 'warn', 'Tentando Firebase Authentication e Realtime Database.');
+  setStatus('🟡 Sync v4 — conectando Firebase…', 'warn', 'Tentando sincronizar direto pelo Realtime Database. O login anônimo será testado em paralelo.');
+
+  // V4: tenta sincronizar o banco imediatamente.
+  // Isso resolve casos em que o login anônimo demora, fica bloqueado ou o projeto está com regras abertas para teste.
+  // Se as regras exigirem auth e o banco negar permissão, o login anônimo em paralelo tenta reconectar depois.
+  setupFirebaseSync('database-first');
 
   try{
     if(firebase.auth && typeof firebase.auth === 'function'){
