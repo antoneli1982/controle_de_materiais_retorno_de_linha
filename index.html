@@ -649,7 +649,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         </select>
         <input type="text" id="filtro-codigo" placeholder="Buscar código...">
         <select id="ordenar-por" title="Ordenar por">
-          <option value="data-desc">Data (mais nova primeiro)</option>
+          <option value="data-desc" selected>Data (mais nova primeiro)</option>
           <option value="data-asc">Data (mais antiga primeiro)</option>
           <option value="codigo-asc">Código (A → Z)</option>
           <option value="codigo-desc">Código (Z → A)</option>
@@ -1525,6 +1525,18 @@ function CMRL_initRegistros(){
   ['filtro-de','filtro-ate','filtro-turno','filtro-caixa','ordenar-por'].forEach(function(id){
     document.getElementById(id).addEventListener('change', function(){ page = 1; render(); });
   });
+
+  /* Ordenação padrão global: todos os navegadores começam sempre pela data mais atual. */
+  function aplicarOrdenacaoPadrao(){
+    var sel = document.getElementById('ordenar-por');
+    if(!sel) return;
+    sel.value = 'data-desc';
+    if(sel.options && sel.options.length) sel.options[0].selected = true;
+  }
+  aplicarOrdenacaoPadrao();
+  window.addEventListener('pageshow', function(ev){
+    if(ev && ev.persisted){ aplicarOrdenacaoPadrao(); render(); }
+  });
   document.getElementById('filtro-codigo').addEventListener('input', function(){ page = 1; render(); });
   document.getElementById('btn-limpar-filtros').addEventListener('click', function(){
     document.getElementById('filtro-de').value = '';
@@ -1536,6 +1548,60 @@ function CMRL_initRegistros(){
     page = 1; render();
   });
 
+  function dataKey(valor){
+    if(!valor) return 0;
+    var s = String(valor).trim();
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m) return Number(m[1] + String(m[2]).padStart(2,'0') + String(m[3]).padStart(2,'0'));
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m) return Number(m[3] + String(m[2]).padStart(2,'0') + String(m[1]).padStart(2,'0'));
+    var d = new Date(s);
+    if(!isNaN(d.getTime())) return Number(d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0'));
+    return 0;
+  }
+
+  function horaKey(valor){
+    if(!valor) return -1;
+    var m = String(valor).trim().match(/^(\d{1,2}):(\d{2})/);
+    if(!m) return -1;
+    return (parseInt(m[1],10) * 60) + parseInt(m[2],10);
+  }
+
+  function seqKey(r){
+    var v = Number((r && (r.criadoEm || r.id)) || 0);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function compararMaisNovo(a,b){
+    var da = dataKey(a.data), db = dataKey(b.data);
+    if(da !== db) return db - da;
+
+    var ha = horaKey(a.horario), hb = horaKey(b.horario);
+    if(ha !== hb) return hb - ha;
+
+    var ca = seqKey(a), cb = seqKey(b);
+    if(ca !== cb) return cb - ca;
+
+    return String(b.id || '').localeCompare(String(a.id || ''));
+  }
+
+  function compararMaisAntigo(a,b){
+    var da = dataKey(a.data), db = dataKey(b.data);
+    if(da !== db){
+      if(!da) return 1;
+      if(!db) return -1;
+      return da - db;
+    }
+
+    var ha = horaKey(a.horario), hb = horaKey(b.horario);
+    if(ha !== hb) return ha - hb;
+
+    var ca = seqKey(a), cb = seqKey(b);
+    if(ca !== cb) return ca - cb;
+
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  }
+
   function filtrados(){
     var de = document.getElementById('filtro-de').value;
     var ate = document.getElementById('filtro-ate').value;
@@ -1543,29 +1609,28 @@ function CMRL_initRegistros(){
     var caixa = document.getElementById('filtro-caixa').value;
     var codigo = document.getElementById('filtro-codigo').value.trim().toUpperCase();
 
-    var ordem = document.getElementById('ordenar-por').value;
+    var ordem = document.getElementById('ordenar-por').value || 'data-desc';
+    if(['data-desc','data-asc','codigo-asc','codigo-desc'].indexOf(ordem) === -1) ordem = 'data-desc';
 
     return registros.filter(function(r){
       if(de && r.data < de) return false;
       if(ate && r.data > ate) return false;
       if(turno && (r.turno||[]).indexOf(turno) === -1) return false;
       if(caixa && (r.caixa||[]).indexOf(caixa) === -1) return false;
-      if(codigo && r.codigo.indexOf(codigo) === -1) return false;
+      if(codigo && String(r.codigo || '').toUpperCase().indexOf(codigo) === -1) return false;
       return true;
     }).sort(function(a,b){
-      if(ordem === 'data-asc'){
-        if(a.data !== b.data) return a.data < b.data ? -1 : 1;
-        return a.horario < b.horario ? -1 : 1;
-      }
+      if(ordem === 'data-asc') return compararMaisAntigo(a,b);
       if(ordem === 'codigo-asc'){
-        return a.codigo < b.codigo ? -1 : (a.codigo > b.codigo ? 1 : 0);
+        var c1 = String(a.codigo || '').localeCompare(String(b.codigo || ''));
+        return c1 || compararMaisNovo(a,b);
       }
       if(ordem === 'codigo-desc'){
-        return a.codigo > b.codigo ? -1 : (a.codigo < b.codigo ? 1 : 0);
+        var c2 = String(b.codigo || '').localeCompare(String(a.codigo || ''));
+        return c2 || compararMaisNovo(a,b);
       }
-      /* padrão: data-desc (mais nova primeiro) */
-      if(a.data !== b.data) return a.data < b.data ? 1 : -1;
-      return a.horario < b.horario ? 1 : -1;
+      /* padrão fixo: data-desc (mais nova primeiro), igual em todos os navegadores */
+      return compararMaisNovo(a,b);
     });
   }
 
@@ -1719,7 +1784,7 @@ function CMRL_initRegistros(){
 (function(){
   "use strict";
 
-  /* CMRL Sync v4 — GitHub Pages + Firebase Realtime Database.
+  /* CMRL Sync v5 — GitHub Pages + Firebase Realtime Database.
      Esta versão NÃO trava a tela em modo local quando o login anônimo falha.
      Ela tenta: 1) login Anonymous; 2) Realtime Database direto; 3) modo local com diagnóstico claro. */
   var firebaseConfig = {
@@ -1732,7 +1797,7 @@ function CMRL_initRegistros(){
     appId: "1:231845500854:web:a49b5a4453d0c00dde1317"
   };
 
-  var SYNC_VERSION = 'cmrl-sync-v4-database-first';
+  var SYNC_VERSION = 'cmrl-sync-v5-data-desc-default';
   var MAT_KEY = 'cmrl-materiais', MAT_VER_KEY = 'cmrl-materiais-ver', MAT_VERSION = 'v2-pontuado';
   var REG_KEY = 'cmrl-registros', REG_VER_KEY = 'cmrl-registros-ver', REG_VERSION = 'v2-pontuado';
 
@@ -2021,7 +2086,7 @@ function CMRL_initRegistros(){
     connectedRef = db.ref('.info/connected');
 
     setStatus(
-      mode === 'anonymous' ? '🟡 Firebase autenticado — sincronizando…' : (mode === 'database-first' ? '🟡 Sync v4 — lendo banco Firebase…' : '🟡 Testando Realtime Database…'),
+      mode === 'anonymous' ? '🟡 Firebase autenticado — sincronizando…' : (mode === 'database-first' ? '🟡 Sync v5 — lendo banco Firebase…' : '🟡 Testando Realtime Database…'),
       'warn',
       'Lendo materiais e registros no Firebase Realtime Database.'
     );
@@ -2099,7 +2164,7 @@ function CMRL_initRegistros(){
     startApp('🟠 Modo local — tentando sincronizar');
   }, 8000);
 
-  setStatus('🟡 Sync v4 — conectando Firebase…', 'warn', 'Tentando sincronizar direto pelo Realtime Database. O login anônimo será testado em paralelo.');
+  setStatus('🟡 Sync v5 — conectando Firebase…', 'warn', 'Tentando sincronizar direto pelo Realtime Database. O login anônimo será testado em paralelo.');
 
   // V4: tenta sincronizar o banco imediatamente.
   // Isso resolve casos em que o login anônimo demora, fica bloqueado ou o projeto está com regras abertas para teste.
