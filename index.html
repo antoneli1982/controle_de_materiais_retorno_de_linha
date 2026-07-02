@@ -270,6 +270,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     border-radius:2px;padding:4px 8px;font-size:11px;transition:.13s}
   .icon-btn:hover{border-color:var(--yellow);color:var(--yellow)}
   .icon-btn.danger:hover{border-color:var(--red);color:var(--red)}
+  #view-registrar .form-panel{max-width:680px;margin:0 auto}
   @media(max-width:700px){
     #tabela{min-width:0}
     #tabela thead{display:none}
@@ -553,6 +554,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         <div class="time" id="clock-time">--:--:--</div>
         <div class="date" id="clock-date">-- de -- de ----</div>
       </div>
+      <div class="theme-toggle" id="btn-fullscreen" title="Tela cheia">
+        <span class="tt-ico" id="fs-ico">⛶</span><span class="tt-lbl" id="fs-lbl">Tela cheia</span>
+      </div>
       <div class="theme-toggle" id="theme-toggle">
         <span class="tt-ico" id="tt-ico">🌙</span><span class="tt-lbl" id="tt-lbl">Escuro</span>
       </div>
@@ -560,15 +564,13 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   </header>
 
   <div class="tabs">
-    <div class="tab on" data-view="apontamento">📋 Apontamento</div>
+    <div class="tab on" data-view="registrar">📝 Registrar</div>
+    <div class="tab" data-view="apontamento">📋 Histórico</div>
     <div class="tab" data-view="dashboard">📊 Dashboard</div>
     <div class="tab" data-view="cadastro">🗂️ Cadastro de Materiais</div>
   </div>
 
-  <div class="view on" id="view-apontamento">
-  <div class="stats" id="stats"></div>
-
-  <div class="grid">
+  <div class="view on" id="view-registrar">
     <div class="panel form-panel">
       <div class="panel-head"><span class="tag">NOVO</span><h2>Registrar retorno de material</h2></div>
       <form id="form">
@@ -643,7 +645,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         <div class="hint" id="hint"></div>
       </form>
     </div>
+  </div><!-- /view-registrar -->
 
+  <div class="view" id="view-apontamento">
+  <div class="stats" id="stats"></div>
     <div class="panel">
       <div class="panel-head"><span class="tag">HISTÓRICO</span><h2>Registros de retorno de linha</h2></div>
       <div class="toolbar">
@@ -696,7 +701,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         </div>
       </div>
     </div>
-  </div>
 
   </div><!-- /view-apontamento -->
 
@@ -1315,6 +1319,24 @@ function CMRL_initRegistros(){
   var turnoSel = null;
   var caixaSel = null;
   var huOn = false, otOn = false;
+
+  /* ---- Tela cheia ---- */
+  (function(){
+    var btn = document.getElementById('btn-fullscreen');
+    if(!btn) return;
+    function inFS(){ return document.fullscreenElement || document.webkitFullscreenElement; }
+    function req(el){ (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el); }
+    function exitFS(){ (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document); }
+    btn.addEventListener('click', function(){ if(inFS()) exitFS(); else req(document.documentElement); });
+    function sync(){
+      var on = !!inFS();
+      var ico = document.getElementById('fs-ico'), lbl = document.getElementById('fs-lbl');
+      if(ico) ico.textContent = on ? '\u2715' : '\u26f6';
+      if(lbl) lbl.textContent = on ? 'Sair' : 'Tela cheia';
+    }
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+  })();
 
   /* ---- Tema ---- */
   var themeToggle = document.getElementById('theme-toggle');
