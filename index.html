@@ -353,6 +353,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     font-size:11px;text-transform:uppercase;letter-spacing:.4px}
   .dash-filtros .btn-ghost:hover{border-color:var(--yellow);color:var(--txt)}
   .f-resumo{padding:0 16px 14px;font-size:12px;color:var(--txt-dim)}
+  .f-checks{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;min-height:38px}
+  .f-check{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--txt);cursor:pointer;white-space:nowrap}
+  .f-check input[type=checkbox]{width:16px;height:16px;margin:0;padding:0;flex:0 0 auto;cursor:pointer;accent-color:var(--blue-soft)}
   .f-resumo b{color:var(--txt)}
   .f-resumo.on b{color:var(--yellow-deep)}
 
@@ -635,7 +638,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         </div>
 
         <div class="field">
-          <label>Caixa <span class="req">*</span></label>
+          <label>Caixa <span class="req">*</span> <span style="font-weight:400;color:var(--txt-faint);font-size:11px;text-transform:none;letter-spacing:0">(pode marcar as duas)</span></label>
           <div class="seg c2" id="seg-caixa">
             <div class="seg-btn" data-v="plastica"><span class="n"><svg viewBox="0 0 40 34" width="32" height="27" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <polygon points="9,32 31,32 33,19 7,19" fill="#15181d"/>
@@ -745,21 +748,18 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             <option value="3">3º Turno</option>
           </select>
         </label>
-        <label class="f-item"><span>Tipo de caixa</span>
-          <select id="f-caixa">
-            <option value="">Todas</option>
-            <option value="plastica">Plástica</option>
-            <option value="papelao">Papelão</option>
-          </select>
-        </label>
-        <label class="f-item"><span>Marcação</span>
-          <select id="f-marc">
-            <option value="">Todas</option>
-            <option value="hu">Com HU</option>
-            <option value="ot">Com OT</option>
-            <option value="huot">Com HU e OT</option>
-          </select>
-        </label>
+        <div class="f-item"><span>Tipo de caixa</span>
+          <div class="f-checks">
+            <label class="f-check"><input type="checkbox" id="f-cx-plastica"> Plástica (EKLT)</label>
+            <label class="f-check"><input type="checkbox" id="f-cx-papelao"> Papelão</label>
+          </div>
+        </div>
+        <div class="f-item"><span>Marcação</span>
+          <div class="f-checks">
+            <label class="f-check"><input type="checkbox" id="f-hu"> HU</label>
+            <label class="f-check"><input type="checkbox" id="f-ot"> OT</label>
+          </div>
+        </div>
         <label class="f-item"><span>Origem</span>
           <select id="f-origem">
             <option value="">Todas</option>
@@ -1180,15 +1180,18 @@ function CMRL_initDashboard(){
   /* ---- Filtros ---- */
   function lerFiltros(){
     function val(id){ var el = document.getElementById(id); return el ? el.value : ''; }
+    function chk(id){ var el = document.getElementById(id); return !!(el && el.checked); }
     return {
       de: val('f-data-de'), ate: val('f-data-ate'),
-      turno: val('f-turno'), caixa: val('f-caixa'),
-      marc: val('f-marc'), origem: val('f-origem'),
+      turno: val('f-turno'),
+      cxPlastica: chk('f-cx-plastica'), cxPapelao: chk('f-cx-papelao'),
+      hu: chk('f-hu'), ot: chk('f-ot'),
+      origem: val('f-origem'),
       busca: (val('f-busca') || '').trim().toLowerCase()
     };
   }
   function filtrosAtivos(f){
-    return !!(f.de || f.ate || f.turno || f.caixa || f.marc || f.origem || f.busca);
+    return !!(f.de || f.ate || f.turno || f.cxPlastica || f.cxPapelao || f.hu || f.ot || f.origem || f.busca);
   }
   function aplicarFiltros(regs){
     var f = lerFiltros();
@@ -1196,10 +1199,18 @@ function CMRL_initDashboard(){
       if(f.de && (!r.data || r.data < f.de)) return false;
       if(f.ate && (!r.data || r.data > f.ate)) return false;
       if(f.turno && (r.turno || []).indexOf(f.turno) < 0) return false;
-      if(f.caixa && (r.caixa || []).indexOf(f.caixa) < 0) return false;
-      if(f.marc === 'hu' && r.hu !== true) return false;
-      if(f.marc === 'ot' && r.ot !== true) return false;
-      if(f.marc === 'huot' && !(r.hu === true && r.ot === true)) return false;
+      /* Caixa: marcar as duas mostra registros de Plástica OU Papelão (união). */
+      if(f.cxPlastica || f.cxPapelao){
+        var cx = r.caixa || [];
+        var okCaixa = (f.cxPlastica && cx.indexOf('plastica') >= 0) ||
+                      (f.cxPapelao  && cx.indexOf('papelao')  >= 0);
+        if(!okCaixa) return false;
+      }
+      /* Marcação: marcar as duas mostra registros com HU OU OT (união). */
+      if(f.hu || f.ot){
+        var okMarc = (f.hu && r.hu === true) || (f.ot && r.ot === true);
+        if(!okMarc) return false;
+      }
       if(f.origem === 'imp' && !r.importado) return false;
       if(f.origem === 'dig' && r.importado) return false;
       if(f.busca){
@@ -1221,8 +1232,9 @@ function CMRL_initDashboard(){
     }
   }
   function initFiltros(){
-    var ids = ['f-data-de','f-data-ate','f-turno','f-caixa','f-marc','f-origem'];
-    ids.forEach(function(id){
+    var selects = ['f-data-de','f-data-ate','f-turno','f-origem'];
+    var checks  = ['f-cx-plastica','f-cx-papelao','f-hu','f-ot'];
+    selects.concat(checks).forEach(function(id){
       var el = document.getElementById(id);
       if(el) el.addEventListener('change', renderDashboard);
     });
@@ -1230,7 +1242,8 @@ function CMRL_initDashboard(){
     if(busca) busca.addEventListener('input', renderDashboard);
     var limpar = document.getElementById('f-limpar');
     if(limpar) limpar.addEventListener('click', function(){
-      ids.forEach(function(id){ var el = document.getElementById(id); if(el) el.value = ''; });
+      selects.forEach(function(id){ var el = document.getElementById(id); if(el) el.value = ''; });
+      checks.forEach(function(id){ var el = document.getElementById(id); if(el) el.checked = false; });
       if(busca) busca.value = '';
       renderDashboard();
     });
@@ -1490,7 +1503,7 @@ function CMRL_initRegistros(){
   var page = 1;
   var editId = null;
   var turnoSel = null;
-  var caixaSel = null;
+  var caixaSel = [];
   var huOn = false, otOn = false;
 
   /* ---- Tela cheia ---- */
@@ -1594,7 +1607,19 @@ function CMRL_initRegistros(){
     });
   }
   bindSeg('seg-turno', function(v){ turnoSel = v; });
-  bindSeg('seg-caixa', function(v){ caixaSel = v; });
+  function bindSegMulti(containerId, getArr){
+    var el = document.getElementById(containerId);
+    el.querySelectorAll('.seg-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var arr = getArr();
+        var v = btn.getAttribute('data-v');
+        var i = arr.indexOf(v);
+        if(i >= 0){ arr.splice(i, 1); btn.classList.remove('on'); }
+        else { arr.push(v); btn.classList.add('on'); }
+      });
+    });
+  }
+  bindSegMulti('seg-caixa', function(){ return caixaSel; });
 
   /* ---- Checkboxes HU / OT ---- */
   document.getElementById('chk-hu').addEventListener('click', function(){
@@ -1613,7 +1638,7 @@ function CMRL_initRegistros(){
     document.getElementById('f-descricao').value = '';
     document.getElementById('f-qtd').value = '';
     document.getElementById('f-horario').value = agoraHM();
-    turnoSel = null; caixaSel = null; huOn = false; otOn = false;
+    turnoSel = null; caixaSel = []; huOn = false; otOn = false;
     document.querySelectorAll('#seg-turno .seg-btn, #seg-caixa .seg-btn').forEach(function(b){ b.classList.remove('on'); });
     document.getElementById('chk-hu').classList.remove('on');
     document.getElementById('chk-ot').classList.remove('on');
@@ -1702,7 +1727,7 @@ function CMRL_initRegistros(){
       hintEl.className = 'hint err';
       return;
     }
-    if(!caixaSel){
+    if(!caixaSel.length){
       hintEl.textContent = 'Selecione o tipo de caixa.';
       hintEl.className = 'hint err';
       return;
@@ -1712,7 +1737,7 @@ function CMRL_initRegistros(){
       id: editId || Date.now(),
       data: data, codigo: codigo, descricao: document.getElementById('f-descricao').value.trim(),
       qtd: qtd, horario: horario,
-      hu: huOn, ot: otOn, turno: [turnoSel], caixa: [caixaSel],
+      hu: huOn, ot: otOn, turno: [turnoSel], caixa: caixaSel.slice(),
       criadoEm: editId ? (registros.find(function(r){return r.id===editId;})||{}).criadoEm || Date.now() : Date.now()
     };
 
@@ -1927,13 +1952,13 @@ function CMRL_initRegistros(){
     document.getElementById('f-qtd').value = r.qtd == null ? '' : r.qtd;
     document.getElementById('f-horario').value = (r.horario && /^\d{2}:\d{2}$/.test(r.horario)) ? r.horario : agoraHM();
     turnoSel = (r.turno && r.turno[0]) || null;
-    caixaSel = (r.caixa && r.caixa[0]) || null;
+    caixaSel = (r.caixa || []).slice();
     huOn = r.hu === true; otOn = r.ot === true;
     document.querySelectorAll('#seg-turno .seg-btn').forEach(function(b){
       b.classList.toggle('on', b.getAttribute('data-v') === turnoSel);
     });
     document.querySelectorAll('#seg-caixa .seg-btn').forEach(function(b){
-      b.classList.toggle('on', b.getAttribute('data-v') === caixaSel);
+      b.classList.toggle('on', caixaSel.indexOf(b.getAttribute('data-v')) >= 0);
     });
     document.getElementById('chk-hu').classList.toggle('on', huOn);
     document.getElementById('chk-ot').classList.toggle('on', otOn);
