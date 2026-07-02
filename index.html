@@ -1734,124 +1734,336 @@ function CMRL_initRegistros(){
   var MAT_KEY = 'cmrl-materiais', MAT_VER_KEY = 'cmrl-materiais-ver', MAT_VERSION = 'v2-pontuado';
   var REG_KEY = 'cmrl-registros', REG_VER_KEY = 'cmrl-registros-ver', REG_VERSION = 'v2-pontuado';
 
-  function toList(val){
-    if(!val) return [];
-    return Array.isArray(val) ? val : Object.keys(val).map(function(k){ return val[k]; });
+  var appStarted = false;
+  var bootstrapping = false;
+  var syncStarted = false;
+  var listenersAttached = false;
+  var syncOnline = false;
+
+  var db = null;
+  var matRef = null;
+  var regRef = null;
+  var seededRef = null;
+  var connectedRef = null;
+
+  var pendingMateriais = null;
+  var pendingRegistros = null;
+  var dirtyMateriais = false;
+  var dirtyRegistros = false;
+  var lastRemoteMateriais = [];
+  var lastRemoteRegistros = [];
+
+  function cloneList(list){
+    try{ return JSON.parse(JSON.stringify(Array.isArray(list) ? list : [])); }
+    catch(e){ return Array.isArray(list) ? list.slice() : []; }
   }
 
-  var started = false;
-  function startApp(){
-    if(started) return;
-    started = true;
+  function toList(val){
+    if(!val) return [];
+    return Array.isArray(val) ? val.filter(function(x){ return x != null; }) : Object.keys(val).map(function(k){ return val[k]; }).filter(function(x){ return x != null; });
+  }
+
+  function readLocal(key){
+    try{
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){
+      return [];
+    }
+  }
+
+  function writeLocal(key, verKey, version, list){
+    try{
+      localStorage.setItem(key, JSON.stringify(Array.isArray(list) ? list : []));
+      localStorage.setItem(verKey, version);
+    }catch(e){}
+  }
+
+  function sameJSON(a,b){
+    try{ return JSON.stringify(a || []) === JSON.stringify(b || []); }
+    catch(e){ return false; }
+  }
+
+  function norm(v){
+    return String(v == null ? '' : v).trim().toUpperCase();
+  }
+
+  function keyMaterial(item){
+    return norm(item && item.codigo);
+  }
+
+  function keyRegistro(item){
+    if(item && item.id != null) return 'id:' + item.id;
+    return 'tmp:' + [item && item.data, item && item.codigo, item && item.horario, item && item.criadoEm].map(norm).join('|');
+  }
+
+  function mergeByKey(base, extra, keyFn){
+    var map = {};
+    var order = [];
+    function add(item, prefer){
+      if(!item) return;
+      var k = keyFn(item);
+      if(!k) k = 'idx:' + order.length + ':' + Math.random();
+      if(!Object.prototype.hasOwnProperty.call(map, k)) order.push(k);
+      if(prefer || !map[k]) map[k] = item;
+    }
+    (base || []).forEach(function(item){ add(item, false); });
+    (extra || []).forEach(function(item){ add(item, true); });
+    return order.map(function(k){ return map[k]; });
+  }
+
+  function badge(){ return document.getElementById('fb-status'); }
+
+  function setStatus(text, tone, title){
+    var b = badge();
+    if(!b) return;
+    b.textContent = text;
+    b.dataset.synced = tone === 'ok' ? '1' : '0';
+    b.title = title || '';
+  }
+
+  function hideOverlay(){
     var overlay = document.getElementById('fb-loading-overlay');
     if(overlay) overlay.style.display = 'none';
-    var badge = document.getElementById('fb-status');
-    if(badge && badge.dataset.synced !== '1'){
-      badge.textContent = '🔴 Modo local (sem sincronização)';
-      badge.title = 'Não foi possível conectar ao Firebase. Mudanças feitas aqui NÃO vão aparecer em outros dispositivos até a conexão voltar.';
+  }
+
+  function startApp(localReason){
+    if(appStarted) return;
+    bootstrapping = true;
+    appStarted = true;
+    hideOverlay();
+
+    if(!syncOnline){
+      setStatus(
+        localReason || '🟠 Modo local — aguardando Firebase',
+        'warn',
+        'A tela abriu com dados locais. Assim que o Firebase responder, a sincronização será conectada automaticamente.'
+      );
     }
-    CMRL_initCadastro();
-    CMRL_initDashboard();
-    CMRL_initRegistros();
+
+    try{
+      CMRL_initCadastro();
+      CMRL_initDashboard();
+      CMRL_initRegistros();
+    }catch(e){
+      console.error('[CMRL] Erro ao iniciar interface:', e);
+      setStatus('🔴 Erro ao abrir a ferramenta', 'err', 'Abra o console do navegador para ver o erro técnico.');
+    }finally{
+      bootstrapping = false;
+    }
+  }
+
+  function markLocalChange(type, list){
+    if(type === 'materiais'){
+      pendingMateriais = cloneList(list);
+      if(appStarted && !bootstrapping) dirtyMateriais = true;
+    }else{
+      pendingRegistros = cloneList(list);
+      if(appStarted && !bootstrapping) dirtyRegistros = true;
+    }
+  }
+
+  function firebaseErrorMessage(e){
+    var code = e && e.code ? String(e.code) : '';
+    var msg = e && e.message ? String(e.message) : String(e || 'Erro desconhecido');
+    if(code.indexOf('permission-denied') >= 0 || msg.toLowerCase().indexOf('permission_denied') >= 0){
+      return 'Permissão negada no Realtime Database. Verifique as regras do banco no Firebase.';
+    }
+    if(code.indexOf('operation-not-allowed') >= 0){
+      return 'Login anônimo não está habilitado no Firebase Authentication.';
+    }
+    if(code.indexOf('auth/') === 0){
+      return 'Falha no Firebase Authentication: ' + msg;
+    }
+    return msg;
+  }
+
+  function pushList(ref, list, label){
+    if(!ref || !syncStarted) return Promise.resolve();
+    var clean = cloneList(list);
+    return ref.set(clean).then(function(){
+      if(label === 'materiais'){
+        lastRemoteMateriais = clean;
+        if(sameJSON(pendingMateriais, clean)) dirtyMateriais = false;
+      }else{
+        lastRemoteRegistros = clean;
+        if(sameJSON(pendingRegistros, clean)) dirtyRegistros = false;
+      }
+      setStatus('🟢 Sincronizado com a nuvem', 'ok', 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.');
+    }).catch(function(e){
+      console.error('[Firebase] Falha ao gravar '+label+':', e);
+      setStatus('🔴 Erro ao sincronizar', 'err', firebaseErrorMessage(e));
+    });
+  }
+
+  window.CMRL_pushMateriais = function(list){
+    markLocalChange('materiais', list);
+    if(syncOnline && matRef) pushList(matRef, list, 'materiais');
+  };
+
+  window.CMRL_pushRegistros = function(list){
+    markLocalChange('registros', list);
+    if(syncOnline && regRef) pushList(regRef, list, 'registros');
+  };
+
+  function applyMateriais(list){
+    list = cloneList(list);
+    writeLocal(MAT_KEY, MAT_VER_KEY, MAT_VERSION, list);
+    if(appStarted && window.CMRL_setMateriais) window.CMRL_setMateriais(list);
+  }
+
+  function applyRegistros(list){
+    list = cloneList(list);
+    writeLocal(REG_KEY, REG_VER_KEY, REG_VERSION, list);
+    if(appStarted && window.CMRL_setRegistros) window.CMRL_setRegistros(list);
+  }
+
+  function attachListeners(){
+    if(listenersAttached) return;
+    listenersAttached = true;
+
+    matRef.on('value', function(snap){
+      var list = toList(snap.val());
+      lastRemoteMateriais = cloneList(list);
+      if(!dirtyMateriais) applyMateriais(list);
+    }, function(e){
+      console.error('[Firebase] Erro no listener de materiais:', e);
+      setStatus('🔴 Erro ao ler nuvem', 'err', firebaseErrorMessage(e));
+    });
+
+    regRef.on('value', function(snap){
+      var list = toList(snap.val());
+      lastRemoteRegistros = cloneList(list);
+      if(!dirtyRegistros) applyRegistros(list);
+    }, function(e){
+      console.error('[Firebase] Erro no listener de registros:', e);
+      setStatus('🔴 Erro ao ler nuvem', 'err', firebaseErrorMessage(e));
+    });
+
+    connectedRef.on('value', function(snap){
+      var online = snap.val() === true;
+      syncOnline = online;
+      if(online){
+        setStatus('🟢 Sincronizado com a nuvem', 'ok', 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.');
+        if(dirtyMateriais && pendingMateriais) pushList(matRef, pendingMateriais, 'materiais');
+        if(dirtyRegistros && pendingRegistros) pushList(regRef, pendingRegistros, 'registros');
+      }else{
+        setStatus('🟠 Reconectando…', 'warn', 'Conexão com o Firebase perdida. As mudanças ficam locais e serão reenviadas quando a conexão voltar.');
+      }
+    });
+  }
+
+  function prepareInitialData(seeded, cloudMat, cloudReg){
+    cloudMat = cloneList(cloudMat);
+    cloudReg = cloneList(cloudReg);
+    lastRemoteMateriais = cloneList(cloudMat);
+    lastRemoteRegistros = cloneList(cloudReg);
+
+    if(seeded){
+      if(appStarted && dirtyMateriais && pendingMateriais){
+        cloudMat = mergeByKey(cloudMat, pendingMateriais, keyMaterial);
+      }
+      if(appStarted && dirtyRegistros && pendingRegistros){
+        cloudReg = mergeByKey(cloudReg, pendingRegistros, keyRegistro);
+      }
+      applyMateriais(cloudMat);
+      applyRegistros(cloudReg);
+      if(!appStarted) startApp();
+
+      var jobs = [];
+      if(dirtyMateriais && pendingMateriais && !sameJSON(cloudMat, lastRemoteMateriais)) jobs.push(pushList(matRef, cloudMat, 'materiais'));
+      if(dirtyRegistros && pendingRegistros && !sameJSON(cloudReg, lastRemoteRegistros)) jobs.push(pushList(regRef, cloudReg, 'registros'));
+      return Promise.all(jobs);
+    }
+
+    if(!appStarted) startApp();
+
+    var localMat = readLocal(MAT_KEY);
+    var localReg = readLocal(REG_KEY);
+    return Promise.all([
+      matRef.set(localMat),
+      regRef.set(localReg),
+      seededRef.set(true)
+    ]).then(function(){
+      lastRemoteMateriais = cloneList(localMat);
+      lastRemoteRegistros = cloneList(localReg);
+    });
+  }
+
+  function setupFirebaseSync(){
+    if(syncStarted) return;
+    syncStarted = true;
+
+    matRef = db.ref('materiais');
+    regRef = db.ref('registros');
+    seededRef = db.ref('meta/seeded');
+    connectedRef = db.ref('.info/connected');
+
+    setStatus('🟡 Conectando ao Firebase…', 'warn', 'Validando acesso ao Firebase Realtime Database.');
+
+    Promise.all([
+      seededRef.once('value'),
+      matRef.once('value'),
+      regRef.once('value')
+    ]).then(function(snaps){
+      var seeded = snaps[0].val() === true;
+      var cloudMat = toList(snaps[1].val());
+      var cloudReg = toList(snaps[2].val());
+      return prepareInitialData(seeded, cloudMat, cloudReg);
+    }).then(function(){
+      syncOnline = true;
+      setStatus('🟢 Sincronizado com a nuvem', 'ok', 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.');
+      attachListeners();
+    }).catch(function(e){
+      console.error('[Firebase] Erro ao sincronizar dados iniciais:', e);
+      setStatus('🔴 Firebase sem permissão', 'err', firebaseErrorMessage(e));
+      startApp('🔴 Modo local — Firebase sem permissão');
+    });
   }
 
   if(typeof firebase === 'undefined'){
-    console.error('[Firebase] SDK não carregou (rede bloqueada?). Abrindo com dados locais deste navegador.');
-    startApp();
+    console.error('[Firebase] SDK não carregou. Abrindo com dados locais.');
+    startApp('🔴 Modo local — SDK Firebase não carregou');
     return;
   }
 
   try{
     firebase.initializeApp(firebaseConfig);
+    if(firebase.database && firebase.database.INTERNAL){
+      try{ firebase.database.INTERNAL.forceWebSockets(); }catch(e){}
+    }
+    db = firebase.database();
   }catch(e){
     console.error('[Firebase] Erro ao iniciar app:', e);
-    startApp();
+    setStatus('🔴 Erro ao iniciar Firebase', 'err', firebaseErrorMessage(e));
+    startApp('🔴 Modo local — erro no Firebase');
     return;
   }
 
-  var auth = firebase.auth();
-  var db = firebase.database();
-
   var fallbackTimer = setTimeout(function(){
-    console.warn('[Firebase] Sem resposta em 8s (sem internet ou banco bloqueado). Abrindo com dados locais deste navegador — mudanças NÃO serão sincronizadas até a conexão voltar.');
-    startApp();
+    console.warn('[Firebase] Inicialização lenta. Abrindo a interface em modo local e mantendo tentativa de sincronização.');
+    startApp('🟠 Modo local — tentando sincronizar');
   }, 8000);
 
-  auth.signInAnonymously().catch(function(e){
-    console.error('[Firebase] Erro no login anônimo:', e);
-  });
-
-  auth.onAuthStateChanged(function(user){
-    if(!user || started) return;
-    clearTimeout(fallbackTimer);
-
-    var matRef = db.ref('materiais');
-    var regRef = db.ref('registros');
-    var seededRef = db.ref('meta/seeded');
-
-    seededRef.once('value').then(function(seededSnap){
-      var jaSemeado = seededSnap.val() === true;
-
-      return Promise.all([matRef.once('value'), regRef.once('value')]).then(function(snaps){
-        var matList = toList(snaps[0].val());
-        var regList = toList(snaps[1].val());
-
-        if(jaSemeado){
-          try{
-            localStorage.setItem(MAT_KEY, JSON.stringify(matList));
-            localStorage.setItem(MAT_VER_KEY, MAT_VERSION);
-            localStorage.setItem(REG_KEY, JSON.stringify(regList));
-            localStorage.setItem(REG_VER_KEY, REG_VERSION);
-          }catch(e){}
-        }
-
-        window.CMRL_pushMateriais = function(list){ try{ matRef.set(list); }catch(e){ console.error('[Firebase] Falha ao gravar materiais:', e); } };
-        window.CMRL_pushRegistros = function(list){ try{ regRef.set(list); }catch(e){ console.error('[Firebase] Falha ao gravar registros:', e); } };
-
-        var badge = document.getElementById('fb-status');
-        if(badge){
-          badge.dataset.synced = '1';
-          badge.textContent = '🟢 Sincronizado com a nuvem';
-          badge.title = 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.';
-        }
-
-        startApp();
-
-        if(!jaSemeado){
-          seededRef.set(true);
-          window.CMRL_pushMateriais(JSON.parse(localStorage.getItem(MAT_KEY) || '[]'));
-          window.CMRL_pushRegistros(JSON.parse(localStorage.getItem(REG_KEY) || '[]'));
-        }
-
-        matRef.on('value', function(snap){
-          if(!started) return;
-          if(window.CMRL_setMateriais) window.CMRL_setMateriais(toList(snap.val()));
-        });
-        regRef.on('value', function(snap){
-          if(!started) return;
-          if(window.CMRL_setRegistros) window.CMRL_setRegistros(toList(snap.val()));
-        });
-
-        db.ref('.info/connected').on('value', function(snap){
-          if(!started) return;
-          var b = document.getElementById('fb-status');
-          if(!b) return;
-          if(snap.val() === true){
-            b.dataset.synced = '1';
-            b.textContent = '🟢 Sincronizado com a nuvem';
-            b.title = 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.';
-          }else{
-            b.dataset.synced = '0';
-            b.textContent = '🟠 Reconectando…';
-            b.title = 'Conexão com o Firebase perdida. Tentando reconectar automaticamente — as mudanças feitas agora só vão sincronizar quando a conexão voltar.';
-          }
-        });
-      });
-    }).catch(function(e){
-      console.error('[Firebase] Erro ao ler dados iniciais:', e);
-      startApp();
+  try{
+    firebase.auth().signInAnonymously().catch(function(e){
+      clearTimeout(fallbackTimer);
+      console.error('[Firebase] Erro no login anônimo:', e);
+      setStatus('🔴 Login anônimo bloqueado', 'err', firebaseErrorMessage(e));
+      startApp('🔴 Modo local — login Firebase bloqueado');
     });
-  });
+
+    firebase.auth().onAuthStateChanged(function(user){
+      if(!user) return;
+      clearTimeout(fallbackTimer);
+      setupFirebaseSync();
+    });
+  }catch(e){
+    clearTimeout(fallbackTimer);
+    console.error('[Firebase] Erro no Authentication:', e);
+    setStatus('🔴 Erro no Authentication', 'err', firebaseErrorMessage(e));
+    startApp('🔴 Modo local — erro no Authentication');
+  }
 })();
 </script>
 </body>
