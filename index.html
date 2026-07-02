@@ -161,6 +161,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   }
   @keyframes tow-beacon-pulse{0%,100%{opacity:1}50%{opacity:.3}}
   @media(max-width:720px){.tow-scene{display:none}}
+  .fb-status{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:11px;
+    color:var(--txt-dim);background:var(--panel-2);border:1px solid var(--line);border-radius:20px;
+    padding:5px 11px;white-space:nowrap;cursor:default}
+  @media(max-width:700px){.fb-status{font-size:10px;padding:4px 8px}}
   .theme-toggle{cursor:pointer;display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);
     border:1px solid var(--line);color:var(--txt-dim);border-radius:3px;padding:7px 13px;
     font-family:var(--font-head);font-size:10.5px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;transition:.15s;white-space:nowrap}
@@ -400,6 +404,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       </div>
     </div>
     <div class="header-right">
+      <div id="fb-status" class="fb-status" title="Status da conexão com o banco de dados">🟡 Conectando…</div>
       <div class="tow-scene" title="Rebocador EKLT — ida cheia, volta vazia">
         <svg viewBox="0 0 360 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
@@ -643,6 +648,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           <option value="papelao">Papelão</option>
         </select>
         <input type="text" id="filtro-codigo" placeholder="Buscar código...">
+        <select id="ordenar-por" title="Ordenar por">
+          <option value="data-desc">Data (mais nova primeiro)</option>
+          <option value="data-asc">Data (mais antiga primeiro)</option>
+          <option value="codigo-asc">Código (A → Z)</option>
+          <option value="codigo-desc">Código (Z → A)</option>
+        </select>
         <button type="button" class="btn-ghost" id="btn-limpar-filtros">Limpar filtros</button>
         <span style="flex:1"></span>
         <button type="button" class="btn-ghost primary" id="btn-xlsx">⬇ Exportar Excel</button>
@@ -1511,7 +1522,7 @@ function CMRL_initRegistros(){
   });
 
   /* ---- Filtros ---- */
-  ['filtro-de','filtro-ate','filtro-turno','filtro-caixa'].forEach(function(id){
+  ['filtro-de','filtro-ate','filtro-turno','filtro-caixa','ordenar-por'].forEach(function(id){
     document.getElementById(id).addEventListener('change', function(){ page = 1; render(); });
   });
   document.getElementById('filtro-codigo').addEventListener('input', function(){ page = 1; render(); });
@@ -1521,6 +1532,7 @@ function CMRL_initRegistros(){
     document.getElementById('filtro-turno').value = '';
     document.getElementById('filtro-caixa').value = '';
     document.getElementById('filtro-codigo').value = '';
+    document.getElementById('ordenar-por').value = 'data-desc';
     page = 1; render();
   });
 
@@ -1531,6 +1543,8 @@ function CMRL_initRegistros(){
     var caixa = document.getElementById('filtro-caixa').value;
     var codigo = document.getElementById('filtro-codigo').value.trim().toUpperCase();
 
+    var ordem = document.getElementById('ordenar-por').value;
+
     return registros.filter(function(r){
       if(de && r.data < de) return false;
       if(ate && r.data > ate) return false;
@@ -1539,6 +1553,17 @@ function CMRL_initRegistros(){
       if(codigo && r.codigo.indexOf(codigo) === -1) return false;
       return true;
     }).sort(function(a,b){
+      if(ordem === 'data-asc'){
+        if(a.data !== b.data) return a.data < b.data ? -1 : 1;
+        return a.horario < b.horario ? -1 : 1;
+      }
+      if(ordem === 'codigo-asc'){
+        return a.codigo < b.codigo ? -1 : (a.codigo > b.codigo ? 1 : 0);
+      }
+      if(ordem === 'codigo-desc'){
+        return a.codigo > b.codigo ? -1 : (a.codigo < b.codigo ? 1 : 0);
+      }
+      /* padrão: data-desc (mais nova primeiro) */
       if(a.data !== b.data) return a.data < b.data ? 1 : -1;
       return a.horario < b.horario ? 1 : -1;
     });
@@ -1720,6 +1745,11 @@ function CMRL_initRegistros(){
     started = true;
     var overlay = document.getElementById('fb-loading-overlay');
     if(overlay) overlay.style.display = 'none';
+    var badge = document.getElementById('fb-status');
+    if(badge && badge.dataset.synced !== '1'){
+      badge.textContent = '🔴 Modo local (sem sincronização)';
+      badge.title = 'Não foi possível conectar ao Firebase. Mudanças feitas aqui NÃO vão aparecer em outros dispositivos até a conexão voltar.';
+    }
     CMRL_initCadastro();
     CMRL_initDashboard();
     CMRL_initRegistros();
@@ -1778,6 +1808,13 @@ function CMRL_initRegistros(){
         window.CMRL_pushMateriais = function(list){ try{ matRef.set(list); }catch(e){ console.error('[Firebase] Falha ao gravar materiais:', e); } };
         window.CMRL_pushRegistros = function(list){ try{ regRef.set(list); }catch(e){ console.error('[Firebase] Falha ao gravar registros:', e); } };
 
+        var badge = document.getElementById('fb-status');
+        if(badge){
+          badge.dataset.synced = '1';
+          badge.textContent = '🟢 Sincronizado com a nuvem';
+          badge.title = 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.';
+        }
+
         startApp();
 
         if(!jaSemeado){
@@ -1793,6 +1830,21 @@ function CMRL_initRegistros(){
         regRef.on('value', function(snap){
           if(!started) return;
           if(window.CMRL_setRegistros) window.CMRL_setRegistros(toList(snap.val()));
+        });
+
+        db.ref('.info/connected').on('value', function(snap){
+          if(!started) return;
+          var b = document.getElementById('fb-status');
+          if(!b) return;
+          if(snap.val() === true){
+            b.dataset.synced = '1';
+            b.textContent = '🟢 Sincronizado com a nuvem';
+            b.title = 'Conectado ao Firebase. Os dados são compartilhados entre todos os dispositivos.';
+          }else{
+            b.dataset.synced = '0';
+            b.textContent = '🟠 Reconectando…';
+            b.title = 'Conexão com o Firebase perdida. Tentando reconectar automaticamente — as mudanças feitas agora só vão sincronizar quando a conexão voltar.';
+          }
         });
       });
     }).catch(function(e){
