@@ -975,7 +975,7 @@ function CMRL_initCadastro(){
     var ws = XLSX.utils.json_to_sheet(rows);
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Materiais');
-    XLSX.writeFile(wb, 'cadastro_materiais.xlsx');
+    baixarXlsx(wb, 'cadastro_materiais.xlsx');
   });
 
   document.getElementById('cad-import').addEventListener('change', function(e){
@@ -1366,7 +1366,8 @@ function CMRL_initRegistros(){
     var d = new Date();
     return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   }
-  document.getElementById('f-data').value = hojeISO();
+  var ultimaData = hojeISO();  // referencia: ultima data usada
+  document.getElementById('f-data').value = ultimaData;
   document.getElementById('f-horario').value = agoraHM();
   document.getElementById('btn-agora').addEventListener('click', function(){
     document.getElementById('f-horario').value = agoraHM();
@@ -1398,7 +1399,7 @@ function CMRL_initRegistros(){
     editId = null;
     document.getElementById('edit-banner').classList.remove('on');
     document.getElementById('btn-submit').textContent = 'Salvar registro';
-    document.getElementById('f-data').value = hojeISO();
+    document.getElementById('f-data').value = ultimaData;  // mantem a ultima data como referencia
     document.getElementById('f-codigo').value = '';
     document.getElementById('f-descricao').value = '';
     document.getElementById('f-qtd').value = '';
@@ -1513,6 +1514,7 @@ function CMRL_initRegistros(){
     }
     saveAll(registros);
 
+    if(!editId) ultimaData = data;  // novos lancamentos herdam a ultima data
     var eraEdicao = !!editId;
     resetForm();
     render();
@@ -1774,7 +1776,7 @@ function CMRL_initRegistros(){
     var ws = XLSX.utils.json_to_sheet(rows);
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Retorno de Linha');
-    XLSX.writeFile(wb, 'controle_materiais_retorno_linha.xlsx');
+    baixarXlsx(wb, 'controle_materiais_retorno_linha.xlsx');
   });
 
   render();
@@ -2208,6 +2210,37 @@ function CMRL_initRegistros(){
     tryDatabaseWithoutAuth(e);
   }
 })();
+</script>
+
+
+<!-- Exportacao compativel com celular (iOS/PWA) e desktop -->
+<script>
+function baixarXlsx(wb, nomeArquivo){
+  if (typeof XLSX === 'undefined'){ alert('Biblioteca de exportacao nao carregada.'); return; }
+  var bytes = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+  var blob = new Blob([bytes], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+  var ehCelular = /iphone|ipad|ipod|android/i.test(navigator.userAgent)
+               || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+
+  // Celular / iOS / PWA: abre o menu Compartilhar (salvar em Arquivos, e-mail, etc.)
+  if (ehCelular && navigator.canShare) {
+    try {
+      var arquivo = new File([blob], nomeArquivo, { type: blob.type });
+      if (navigator.canShare({ files:[arquivo] })) {
+        navigator.share({ files:[arquivo], title: nomeArquivo }).catch(function(){});
+        return;
+      }
+    } catch (e) {}
+  }
+
+  // Desktop: download direto
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = nomeArquivo;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+}
 </script>
 
 </body>
