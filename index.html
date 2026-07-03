@@ -261,6 +261,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     letter-spacing:.6px;text-transform:uppercase}
   .badge.hu{background:rgba(31,79,176,.18);color:var(--blue-soft)}
   .badge.ot{background:rgba(124,107,214,.18);color:var(--purple)}
+   .badge.seq{background:rgba(20,184,166,.16);color:#14b8a6}
   .badge.plastica{background:rgba(47,174,92,.15);color:var(--green)}
   .badge.papelao{background:rgba(217,154,18,.16);color:var(--orange)}
   .badge.unk{background:rgba(141,151,161,.15);color:var(--txt-faint)}
@@ -373,6 +374,17 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   /* ---- Dashboard ---- */
   .dash-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
+  .chart-nota{margin-top:10px;font-size:11px;line-height:1.45;color:var(--txt-faint)}
+  .dash-relatorio-panel .rel-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .dash-relatorio-panel .rel-lista li{font-size:13.5px;line-height:1.5;padding-left:16px;position:relative;color:var(--txt-dim)}
+  .dash-relatorio-panel .rel-lista li::before{content:"\25B8";position:absolute;left:0;color:var(--yellow)}
+  .dash-relatorio-panel .rel-lista b{color:var(--txt)}
+  .dash-relatorio-panel .rel-sub{margin:16px 0 8px;font-family:var(--font-head);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--txt-faint)}
+  .dash-relatorio-panel .rel-top{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+  .dash-relatorio-panel .rel-top li{display:flex;justify-content:space-between;gap:10px;font-family:var(--font-mono);font-size:12px;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:3px;padding:6px 10px}
+  .dash-relatorio-panel .rel-cod{font-weight:600;color:var(--txt)}
+  .dash-relatorio-panel .rel-n{color:var(--txt-faint)}
+  .dash-relatorio-panel .rel-vazio{color:var(--txt-faint);font-size:13px;margin:0}
   @media(max-width:960px){.dash-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media(max-width:560px){.dash-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .kpi{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:14px;position:relative;overflow:hidden}
@@ -659,6 +671,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           <div class="chk-row">
             <div class="chk" id="chk-hu"><div class="box"></div>HU</div>
             <div class="chk" id="chk-ot"><div class="box"></div>OT</div>
+            <div class="chk" id="chk-seq" style="grid-column:1 / -1"><div class="box"></div>ETIQUETA DE SEQUÊNCIAMENTO</div>
           </div>
         </div>
 
@@ -704,7 +717,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           <thead>
             <tr>
               <th>Data</th><th>Código</th><th>Descrição</th><th>Qtd</th><th>Horário</th>
-              <th>HU/OT</th><th>Turno</th><th>Caixa</th><th>Ações</th>
+              <th>Marcações</th><th>Turno</th><th>Caixa</th><th>Ações</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -727,6 +740,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <div class="view" id="view-dashboard">
     <div class="dash-kpis" id="dash-kpis"></div>
+
+    <div class="panel dash-relatorio-panel" style="margin-bottom:16px">
+      <div class="panel-head"><span class="tag">PONTOS CRÍTICOS</span><h2>Relatório de incidência</h2></div>
+      <div id="dash-relatorio"></div>
+    </div>
 
     <div class="dash-alert" id="dash-alert" style="display:none"></div>
 
@@ -758,6 +776,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           <div class="f-checks">
             <label class="f-check"><input type="checkbox" id="f-hu"> HU</label>
             <label class="f-check"><input type="checkbox" id="f-ot"> OT</label>
+            <label class="f-check"><input type="checkbox" id="f-seq"> SEQ</label>
           </div>
         </div>
         <label class="f-item"><span>Origem</span>
@@ -792,49 +811,35 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     </div>
 
     <div class="dash-grid">
-      <div class="panel">
-        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Registros por dia</h2></div>
+      <div class="panel span2">
+        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Retornos por dia</h2></div>
         <div class="chart-wrap"><canvas id="chart-dia"></canvas></div>
       </div>
+      <div class="panel span2">
+        <div class="panel-head"><span class="tag">PERÍODO DO MÊS</span><h2>Retornos por dia do mês</h2></div>
+        <div class="chart-wrap"><canvas id="chart-diames"></canvas></div>
+        <div class="chart-nota">Soma os retornos de todos os meses por dia (1–31). Os 10 primeiros dias aparecem destacados para revelar concentração no início do mês.</div>
+      </div>
       <div class="panel">
-        <div class="panel-head"><span class="tag">TURNO</span><h2>Quantidade retornada por turno</h2></div>
+        <div class="panel-head"><span class="tag">TURNO</span><h2>Retornos por turno</h2></div>
         <div class="chart-wrap"><canvas id="chart-turno"></canvas></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="tag">CAIXA</span><h2>Distribuição por tipo de caixa</h2></div>
+        <div class="panel-head"><span class="tag">EMBALAGEM</span><h2>Retornos por tipo de embalagem</h2></div>
         <div class="chart-wrap small"><canvas id="chart-caixa"></canvas></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="tag">HU / OT</span><h2>Marcações HU e OT</h2></div>
+        <div class="panel-head"><span class="tag">ETIQUETAS</span><h2>Etiquetas encontradas</h2></div>
         <div class="chart-wrap small"><canvas id="chart-huot"></canvas></div>
+        <div class="chart-nota">Quantidade de retornos em que cada etiqueta (HU, OT, SEQ) foi encontrada.</div>
       </div>
-      <div class="panel span2">
-        <div class="panel-head"><span class="tag">RANKING</span><h2>Top 10 materiais com mais retorno</h2></div>
-        <div class="chart-wrap tall"><canvas id="chart-top"></canvas></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><span class="tag">QUALIDADE</span><h2>Confiança da leitura (dados importados)</h2></div>
+      <div class="panel" id="painel-confianca" style="display:none">
+        <div class="panel-head"><span class="tag">QUALIDADE DA LEITURA</span><h2>Confiança da leitura por IA</h2></div>
         <div class="chart-wrap small"><canvas id="chart-confianca"></canvas></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><span class="tag">COBERTURA</span><h2>Registros por página do formulário original</h2></div>
-        <div class="chart-wrap small"><canvas id="chart-pagina"></canvas></div>
+        <div class="chart-nota">Só se aplica a dados que uma inteligência artificial extraiu de imagens de cadernos manuscritos: mede a dificuldade de leitura da imagem, não a qualidade do dado. Não vale para dados digitados no app ou importados de planilha.</div>
       </div>
     </div>
 
-    <div class="panel" style="margin-top:22px">
-      <div class="panel-head"><span class="tag">REVISÃO</span><h2>Itens que precisam de confirmação</h2></div>
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th>Data</th><th>Código</th><th>Qtd</th><th>Horário</th><th>Turno</th><th>Caixa</th><th>Motivo</th></tr></thead>
-          <tbody id="dash-revisao"></tbody>
-        </table>
-      </div>
-      <div id="dash-revisao-empty" style="display:none" class="empty">
-        <div class="big">✅</div>
-        <div class="txt">NENHUM ITEM PENDENTE DE REVISÃO</div>
-      </div>
-    </div>
   </div><!-- /view-dashboard -->
 
   <div class="view" id="view-cadastro">
@@ -1185,13 +1190,13 @@ function CMRL_initDashboard(){
       de: val('f-data-de'), ate: val('f-data-ate'),
       turno: val('f-turno'),
       cxPlastica: chk('f-cx-plastica'), cxPapelao: chk('f-cx-papelao'),
-      hu: chk('f-hu'), ot: chk('f-ot'),
+      hu: chk('f-hu'), ot: chk('f-ot'), seq: chk('f-seq'),
       origem: val('f-origem'),
       busca: (val('f-busca') || '').trim().toLowerCase()
     };
   }
   function filtrosAtivos(f){
-    return !!(f.de || f.ate || f.turno || f.cxPlastica || f.cxPapelao || f.hu || f.ot || f.origem || f.busca);
+    return !!(f.de || f.ate || f.turno || f.cxPlastica || f.cxPapelao || f.hu || f.ot || f.seq || f.origem || f.busca);
   }
   function aplicarFiltros(regs){
     var f = lerFiltros();
@@ -1207,8 +1212,8 @@ function CMRL_initDashboard(){
         if(!okCaixa) return false;
       }
       /* Marcação: marcar as duas mostra registros com HU OU OT (união). */
-      if(f.hu || f.ot){
-        var okMarc = (f.hu && r.hu === true) || (f.ot && r.ot === true);
+      if(f.hu || f.ot || f.seq){
+        var okMarc = (f.hu && r.hu === true) || (f.ot && r.ot === true) || (f.seq && r.seq === true);
         if(!okMarc) return false;
       }
       if(f.origem === 'imp' && !r.importado) return false;
@@ -1233,7 +1238,7 @@ function CMRL_initDashboard(){
   }
   function initFiltros(){
     var selects = ['f-data-de','f-data-ate','f-turno','f-origem'];
-    var checks  = ['f-cx-plastica','f-cx-papelao','f-hu','f-ot'];
+    var checks  = ['f-cx-plastica','f-cx-papelao','f-hu','f-ot','f-seq'];
     selects.concat(checks).forEach(function(id){
       var el = document.getElementById(id);
       if(el) el.addEventListener('change', renderDashboard);
@@ -1310,26 +1315,46 @@ function CMRL_initDashboard(){
     var datasValidas = registros.map(function(r){ return r.data; }).filter(Boolean).sort();
     var periodo = datasValidas.length ? fmtDataBR(datasValidas[0])+' a '+fmtDataBR(datasValidas[datasValidas.length-1]) : '—';
 
+    /* ---- Criticidade (descritivo sobre os dados filtrados) ---- */
+    var porTurnoCount = {'1':0,'2':0,'3':0};
+    registros.forEach(function(r){ (r.turno||[]).forEach(function(t){ if(porTurnoCount[t]!==undefined) porTurnoCount[t]++; }); });
+    var turnoTop = ['1','2','3'].sort(function(a,b){ return porTurnoCount[b]-porTurnoCount[a]; })[0];
+    if(!porTurnoCount[turnoTop]) turnoTop = '';
+    var turnoTopPct = (turnoTop && total) ? Math.round(porTurnoCount[turnoTop]/total*100) : 0;
+
+    var porCaixaCount = {plastica:0, papelao:0};
+    registros.forEach(function(r){ (r.caixa||[]).forEach(function(c){ if(porCaixaCount[c]!==undefined) porCaixaCount[c]++; }); });
+    var caixaTop = porCaixaCount.papelao > porCaixaCount.plastica ? 'papelao' : (porCaixaCount.plastica > 0 ? 'plastica' : '');
+    var caixaTopNome = caixaTop === 'papelao' ? 'Papelão' : (caixaTop === 'plastica' ? 'Plástica' : '—');
+    var caixaTopVal = caixaTop ? porCaixaCount[caixaTop] : 0;
+    var caixaTopPct = (caixaTop && total) ? Math.round(caixaTopVal/total*100) : 0;
+
+    var terco = {'Início':0,'Meio':0,'Fim':0};
+    registros.forEach(function(r){
+      if(!r.data) return; var d = parseInt(r.data.split('-')[2],10);
+      if(d<=10) terco['Início']++; else if(d<=20) terco['Meio']++; else terco['Fim']++;
+    });
+    var tercoTop = ['Início','Meio','Fim'].sort(function(a,b){ return terco[b]-terco[a]; })[0];
+    if(!terco[tercoTop]) tercoTop = '';
+    var tercoTopPct = (tercoTop && total) ? Math.round(terco[tercoTop]/total*100) : 0;
+
+    var huEnc  = registros.filter(function(r){ return r.hu===true;  }).length;
+    var otEnc  = registros.filter(function(r){ return r.ot===true;  }).length;
+    var seqEnc = registros.filter(function(r){ return r.seq===true; }).length;
+    var semEtiqueta = registros.filter(function(r){ return r.hu!==true && r.ot!==true && r.seq!==true; }).length;
+
     document.getElementById('dash-kpis').innerHTML =
-      '<div class="kpi"><div class="v">'+total+'</div><div class="k">Total de registros</div></div>' +
+      '<div class="kpi"><div class="v">'+total+'</div><div class="k">Total de retornos</div></div>' +
       '<div class="kpi"><div class="v">'+totalQtd+'</div><div class="k">Peças retornadas</div></div>' +
-      '<div class="kpi"><div class="v">'+totalCodigos+'</div><div class="k">Códigos distintos</div></div>' +
-      '<div class="kpi k-ok"><div class="v">'+pctHU+'%</div><div class="k">Com marcação HU</div></div>' +
-      '<div class="kpi'+(baixaConf?' k-warn':'')+'"><div class="v">'+baixaConf+'</div><div class="k">Confiança baixa (importados)</div></div>' +
+      '<div class="kpi'+(turnoTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(turnoTop?turnoTop+'º ('+turnoTopPct+'%)':'—')+'</div><div class="k">Turno mais crítico</div></div>' +
+      '<div class="kpi'+(caixaTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(caixaTop?caixaTopNome+' ('+caixaTopPct+'%)':'—')+'</div><div class="k">Embalagem mais crítica</div></div>' +
+      '<div class="kpi'+(tercoTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(tercoTop?tercoTop+' ('+tercoTopPct+'%)':'—')+'</div><div class="k">Concentração no mês</div></div>' +
       '<div class="kpi"><div class="v" style="font-size:14px">'+periodo+'</div><div class="k">Período coberto</div></div>';
 
     var alertEl = document.getElementById('dash-alert');
-    var avisos = [];
     if(!chartsOk){
-      avisos.push('⚠ Os gráficos não puderam ser carregados (sem conexão com a internet). Os números abaixo continuam corretos.');
-    }
-    if(importados.length){
-      avisos.push('⚠ <b>'+importados.length+' registros</b> desta base vieram da transcrição manuscrita do formulário original em papel (\'CONTROLE DE MATERIAIS DE RETORNO DE LINHA\'). ' +
-        'A caligrafia é ambígua em vários trechos — <b>'+baixaConf+' registros</b> têm confiança de leitura baixa. Revise os itens listados na tabela "Itens que precisam de confirmação" abaixo antes de considerar os números definitivos.');
-    }
-    if(avisos.length){
       alertEl.style.display = 'block';
-      alertEl.innerHTML = avisos.join('<br><br>');
+      alertEl.innerHTML = '⚠ Os gráficos não puderam ser carregados (sem conexão com a internet). Os números acima continuam corretos.';
     }else{
       alertEl.style.display = 'none';
     }
@@ -1349,16 +1374,26 @@ function CMRL_initDashboard(){
       options: baseOpts({ plugins:{ legend:{display:false} } })
     });
 
-    /* ---- Quantidade por turno ---- */
-    var qtdTurno = {'1':0,'2':0,'3':0};
-    registros.forEach(function(r){
-      (r.turno||[]).forEach(function(t){ if(qtdTurno[t] !== undefined) qtdTurno[t] += (r.qtd||0); });
+    /* ---- Retornos por dia do mês (1–31) ---- */
+    var porDiaMes = {}; for(var dm=1; dm<=31; dm++) porDiaMes[dm]=0;
+    registros.forEach(function(r){ if(r.data){ var d=parseInt(r.data.split('-')[2],10); if(d>=1&&d<=31) porDiaMes[d]++; } });
+    var diasMes = []; for(var dm2=1; dm2<=31; dm2++) diasMes.push(dm2);
+    destroyChart('diames');
+    charts.diames = new Chart(document.getElementById('chart-diames'), {
+      type:'bar',
+      data:{ labels: diasMes, datasets:[{
+        label:'Retornos', data: diasMes.map(function(d){ return porDiaMes[d]; }),
+        backgroundColor: diasMes.map(function(d){ return d<=10 ? PALETTE.red : PALETTE.blueSoft; }), borderRadius:3
+      }]},
+      options: baseOpts({ plugins:{ legend:{display:false} } })
     });
+
+    /* ---- Retornos por turno (ocorrências) ---- */
     destroyChart('turno');
     charts.turno = new Chart(document.getElementById('chart-turno'), {
       type:'bar',
       data:{ labels:['1º Turno','2º Turno','3º Turno'], datasets:[{
-        label:'Peças retornadas', data:[qtdTurno['1'],qtdTurno['2'],qtdTurno['3']],
+        label:'Retornos', data:[porTurnoCount['1'],porTurnoCount['2'],porTurnoCount['3']],
         backgroundColor:[PALETTE.blue, PALETTE.purple, PALETTE.orange], borderRadius:6
       }]},
       options: baseOpts({ plugins:{ legend:{display:false} } })
@@ -1383,109 +1418,62 @@ function CMRL_initDashboard(){
       options: baseOpts({ scales:{} })
     });
 
-    /* ---- HU / OT ---- */
-    function triCount(field){
-      var s=0,n=0,u=0;
-      registros.forEach(function(r){ if(r[field]===true) s++; else if(r[field]===false) n++; else u++; });
-      return [s,n,u];
-    }
-    var hu3 = triCount('hu'), ot3 = triCount('ot');
+    /* ---- Etiquetas encontradas (HU / OT / SEQ) ---- */
     destroyChart('huot');
     charts.huot = new Chart(document.getElementById('chart-huot'), {
       type:'bar',
-      data:{ labels:['Sim','Não','Indefinido'], datasets:[
-        {label:'HU', data:hu3, backgroundColor:PALETTE.blue, borderRadius:5},
-        {label:'OT', data:ot3, backgroundColor:PALETTE.purple, borderRadius:5}
-      ]},
-      options: baseOpts({})
-    });
-
-    /* ---- Top 10 materiais ---- */
-    var porCodigo = {};
-    registros.forEach(function(r){
-      if(!porCodigo[r.codigo]) porCodigo[r.codigo] = {qtd:0, count:0, descricao:r.descricao||''};
-      porCodigo[r.codigo].qtd += (r.qtd||0);
-      porCodigo[r.codigo].count += 1;
-      if(!porCodigo[r.codigo].descricao && window.CMRL){
-        var d = window.CMRL.lookup(r.codigo);
-        if(d) porCodigo[r.codigo].descricao = d;
-      }
-    });
-    var topArr = Object.keys(porCodigo).map(function(c){ return Object.assign({codigo:c}, porCodigo[c]); });
-    topArr.sort(function(a,b){ return b.qtd - a.qtd; });
-    topArr = topArr.slice(0, 10);
-    destroyChart('top');
-    charts.top = new Chart(document.getElementById('chart-top'), {
-      type:'bar',
-      data:{ labels: topArr.map(function(t){ return t.codigo + (t.descricao ? ' — '+t.descricao.substring(0,28) : ''); }),
-        datasets:[{ label:'Quantidade retornada', data: topArr.map(function(t){ return t.qtd; }), backgroundColor: PALETTE.blueSoft, borderRadius:5 }] },
-      options: baseOpts({ indexAxis:'y', plugins:{legend:{display:false}} })
-    });
-
-    /* ---- Confiança da leitura ---- */
-    var confCount = {'Alta':0,'Média':0,'Baixa':0};
-    importados.forEach(function(r){ if(confCount[r.confianca] !== undefined) confCount[r.confianca]++; });
-    destroyChart('confianca');
-    charts.confianca = new Chart(document.getElementById('chart-confianca'), {
-      type:'pie',
-      data:{ labels:['Alta','Média','Baixa'], datasets:[{
-        data:[confCount['Alta'], confCount['Média'], confCount['Baixa']],
-        backgroundColor:[PALETTE.green, PALETTE.orange, PALETTE.red], borderWidth:0
+      data:{ labels:['HU','OT','SEQ'], datasets:[{
+        label:'Etiquetas encontradas',
+        data:[huEnc, otEnc, seqEnc],
+        backgroundColor:[PALETTE.blue, PALETTE.purple, PALETTE.green], borderRadius:5
       }]},
-      options: baseOpts({ scales:{} })
+      options: baseOpts({ plugins:{ legend:{display:false} } })
     });
 
-    /* ---- Página do formulário original ---- */
-    var pagCount = {};
-    importados.forEach(function(r){ pagCount[r.pagina] = (pagCount[r.pagina]||0) + 1; });
-    var pags = Object.keys(pagCount).sort();
-    destroyChart('pagina');
-    charts.pagina = new Chart(document.getElementById('chart-pagina'), {
-      type:'bar',
-      data:{ labels: pags.map(function(p){ return 'Página '+p; }), datasets:[{
-        label:'Registros', data: pags.map(function(p){ return pagCount[p]; }),
-        backgroundColor: PALETTE.orange, borderRadius:6
-      }]},
-      options: baseOpts({ plugins:{legend:{display:false}} })
-    });
-
-    }
-
-    /* ---- Itens para revisão ---- */
-    function motivos(r){
-      var m = [];
-      if(!r.importado) return m;
-      if(r.confianca === 'Baixa') m.push('confiança de leitura baixa');
-      if(!r.data) m.push('sem data legível');
-      if(r.qtd == null) m.push('quantidade ilegível');
-      if(r.hu === null) m.push('marcação HU ilegível');
-      if(r.ot === null) m.push('marcação OT ilegível');
-      if(!r.turno || r.turno.length === 0) m.push('turno ilegível');
-      if(r.turno && r.turno.length > 1) m.push('múltiplos turnos marcados');
-      if(!r.caixa || r.caixa.length === 0) m.push('caixa não identificada');
-      if(r.caixa && r.caixa.length > 1) m.push('mais de um tipo de caixa marcado');
-      if(r.horario && !/^\d{2}:\d{2}$/.test(r.horario)) m.push('horário ilegível');
-      return m;
-    }
-    var revisao = registros.map(function(r){ return {r:r, m:motivos(r)}; }).filter(function(x){ return x.m.length; });
-    var tbody = document.getElementById('dash-revisao');
-    if(!revisao.length){
-      tbody.innerHTML = '';
-      document.getElementById('dash-revisao-empty').style.display = 'block';
+    /* ---- Confiança da leitura (só p/ dados importados de caderno) ---- */
+    var painelConf = document.getElementById('painel-confianca');
+    if(importados.length){
+      if(painelConf) painelConf.style.display = '';
+      var confCount = {'Alta':0,'Média':0,'Baixa':0};
+      importados.forEach(function(r){ if(confCount[r.confianca] !== undefined) confCount[r.confianca]++; });
+      destroyChart('confianca');
+      charts.confianca = new Chart(document.getElementById('chart-confianca'), {
+        type:'pie',
+        data:{ labels:['Alta','Média','Baixa'], datasets:[{
+          data:[confCount['Alta'], confCount['Média'], confCount['Baixa']],
+          backgroundColor:[PALETTE.green, PALETTE.orange, PALETTE.red], borderWidth:0
+        }]},
+        options: baseOpts({ scales:{} })
+      });
     }else{
-      document.getElementById('dash-revisao-empty').style.display = 'none';
-      tbody.innerHTML = revisao.map(function(x){
-        var r = x.r;
-        return '<tr>' +
-          '<td>'+(r.data ? fmtDataBR(r.data)+'/'+r.data.split('-')[0] : '—')+'</td>' +
-          '<td><b>'+r.codigo+'</b></td>' +
-          '<td>'+(r.qtd==null?'—':r.qtd)+'</td>' +
-          '<td>'+(r.horario||'—')+'</td>' +
-          '<td>'+((r.turno||[]).map(function(t){return TURNO_LABEL[t]||t;}).join('/')||'—')+'</td>' +
-          '<td>'+((r.caixa||[]).join('/')||'—')+'</td>' +
-          '<td style="color:var(--orange)">'+x.m.join(', ')+'</td>' +
-        '</tr>';
-      }).join('');
+      if(painelConf) painelConf.style.display = 'none';
+      destroyChart('confianca');
+    }
+
+    }
+
+    /* ---- Relatório de pontos críticos (texto, funciona mesmo sem gráficos) ---- */
+    var relEl = document.getElementById('dash-relatorio');
+    if(relEl){
+      if(!total){
+        relEl.innerHTML = '<p class="rel-vazio">Sem retornos no período/filtros selecionados.</p>';
+      }else{
+        var pct = function(n){ return Math.round(n/total*100); };
+        var linhas = [];
+        linhas.push('No recorte atual há <b>'+total+' retornos</b> ('+totalQtd+' peças).');
+        if(tercoTop) linhas.push('Maior concentração no <b>'+tercoTop.toLowerCase()+' do mês</b> — '+terco[tercoTop]+' retornos ('+tercoTopPct+'%).');
+        if(turnoTop) linhas.push('Turno mais crítico: <b>'+turnoTop+'º turno</b> — '+porTurnoCount[turnoTop]+' retornos ('+turnoTopPct+'%).');
+        if(caixaTop) linhas.push('Embalagem com mais retornos: <b>'+caixaTopNome+'</b> — '+caixaTopVal+' retornos ('+caixaTopPct+'%).');
+        linhas.push('Etiquetas encontradas: <b>HU '+huEnc+'</b> · <b>OT '+otEnc+'</b> · <b>SEQ '+seqEnc+'</b>. Sem nenhuma etiqueta identificada: <b>'+semEtiqueta+'</b> ('+pct(semEtiqueta)+'%).');
+        var porCod = {};
+        registros.forEach(function(r){ porCod[r.codigo] = (porCod[r.codigo]||0) + 1; });
+        var topCod = Object.keys(porCod).map(function(c){ return {c:c, n:porCod[c]}; }).sort(function(a,b){ return b.n-a.n; }).slice(0,5);
+        var itens = topCod.map(function(t){ return '<li><span class="rel-cod">'+t.c+'</span><span class="rel-n">'+t.n+'</span></li>'; }).join('');
+        relEl.innerHTML =
+          '<ul class="rel-lista">' + linhas.map(function(l){ return '<li>'+l+'</li>'; }).join('') + '</ul>' +
+          '<div class="rel-sub">Materiais que mais retornam (nº de retornos)</div>' +
+          '<ul class="rel-top">' + itens + '</ul>';
+      }
     }
   }
 
@@ -1504,7 +1492,7 @@ function CMRL_initRegistros(){
   var editId = null;
   var turnoSel = null;
   var caixaSel = [];
-  var huOn = false, otOn = false;
+  var huOn = false, otOn = false, seqOn = false;
 
   /* ---- Tela cheia ---- */
   (function(){
@@ -1629,6 +1617,10 @@ function CMRL_initRegistros(){
     otOn = !otOn; this.classList.toggle('on', otOn);
   });
 
+  document.getElementById('chk-seq').addEventListener('click', function(){
+    seqOn = !seqOn; this.classList.toggle('on', seqOn);
+  });
+
   function resetForm(){
     editId = null;
     document.getElementById('edit-banner').classList.remove('on');
@@ -1638,10 +1630,11 @@ function CMRL_initRegistros(){
     document.getElementById('f-descricao').value = '';
     document.getElementById('f-qtd').value = '';
     document.getElementById('f-horario').value = agoraHM();
-    turnoSel = null; caixaSel = []; huOn = false; otOn = false;
+    turnoSel = null; caixaSel = []; huOn = false; otOn = false; seqOn = false;
     document.querySelectorAll('#seg-turno .seg-btn, #seg-caixa .seg-btn').forEach(function(b){ b.classList.remove('on'); });
     document.getElementById('chk-hu').classList.remove('on');
     document.getElementById('chk-ot').classList.remove('on');
+    document.getElementById('chk-seq').classList.remove('on');
     atualizarDescricao();
   }
 
@@ -1737,7 +1730,7 @@ function CMRL_initRegistros(){
       id: editId || Date.now(),
       data: data, codigo: codigo, descricao: document.getElementById('f-descricao').value.trim(),
       qtd: qtd, horario: horario,
-      hu: huOn, ot: otOn, turno: [turnoSel], caixa: caixaSel.slice(),
+      hu: huOn, ot: otOn, seq: seqOn, turno: [turnoSel], caixa: caixaSel.slice(),
       criadoEm: editId ? (registros.find(function(r){return r.id===editId;})||{}).criadoEm || Date.now() : Date.now()
     };
 
@@ -1906,7 +1899,8 @@ function CMRL_initRegistros(){
       tbody.innerHTML = slice.map(function(r){
         var badgeHU = r.hu === true ? '<span class="badge hu">HU</span>' : (r.hu === null ? '<span class="badge unk">HU?</span>' : '');
         var badgeOT = r.ot === true ? '<span class="badge ot">OT</span>' : (r.ot === null ? '<span class="badge unk">OT?</span>' : '');
-        var marcacoes = (badgeHU + ' ' + badgeOT).trim();
+        var badgeSEQ = r.seq === true ? '<span class="badge seq">SEQ</span>' : (r.seq === null ? '<span class="badge unk">SEQ?</span>' : '');
+        var marcacoes = (badgeHU + ' ' + badgeOT + ' ' + badgeSEQ).trim();
         if(!marcacoes) marcacoes = '<span style="color:var(--txt-faint)">—</span>';
         var turnos = (r.turno && r.turno.length) ? r.turno.map(function(t){ return TURNO_LABEL[t]||t; }).join(' / ') : '<span style="color:var(--txt-faint)">—</span>';
         var caixas = (r.caixa && r.caixa.length) ? r.caixa.map(function(c){ return '<span class="badge '+c+'">'+(CAIXA_LABEL[c]||c)+'</span>'; }).join(' ') : '<span style="color:var(--txt-faint)">—</span>';
@@ -1918,7 +1912,7 @@ function CMRL_initRegistros(){
           '<td data-label="Descrição">'+(r.descricao ? r.descricao : '<span style="color:var(--txt-faint)">—</span>')+'</td>' +
           '<td data-label="Qtd">'+(r.qtd==null ? '<span style="color:var(--txt-faint)">—</span>' : r.qtd)+'</td>' +
           '<td data-label="Horário">'+(r.horario||'<span style="color:var(--txt-faint)">—</span>')+'</td>' +
-          '<td data-label="HU/OT">'+marcacoes+'</td>' +
+          '<td data-label="Marcações">'+marcacoes+'</td>' +
           '<td data-label="Turno">'+turnos+'</td>' +
           '<td data-label="Caixa">'+caixas+'</td>' +
           '<td data-label="Ações" class="acoes-cell"><div class="row-actions">' +
@@ -1953,7 +1947,7 @@ function CMRL_initRegistros(){
     document.getElementById('f-horario').value = (r.horario && /^\d{2}:\d{2}$/.test(r.horario)) ? r.horario : agoraHM();
     turnoSel = (r.turno && r.turno[0]) || null;
     caixaSel = (r.caixa || []).slice();
-    huOn = r.hu === true; otOn = r.ot === true;
+    huOn = r.hu === true; otOn = r.ot === true; seqOn = r.seq === true;
     document.querySelectorAll('#seg-turno .seg-btn').forEach(function(b){
       b.classList.toggle('on', b.getAttribute('data-v') === turnoSel);
     });
@@ -1962,6 +1956,7 @@ function CMRL_initRegistros(){
     });
     document.getElementById('chk-hu').classList.toggle('on', huOn);
     document.getElementById('chk-ot').classList.toggle('on', otOn);
+    document.getElementById('chk-seq').classList.toggle('on', seqOn);
     atualizarDescricao();
     if(r.descricao) document.getElementById('f-descricao').value = r.descricao;
     if(r.importado){
@@ -2003,6 +1998,7 @@ function CMRL_initRegistros(){
         'Horário': r.horario,
         'HU': r.hu === true ? 'Sim' : (r.hu === false ? 'Não' : 'Indefinido'),
         'OT': r.ot === true ? 'Sim' : (r.ot === false ? 'Não' : 'Indefinido'),
+        'Etiqueta de Sequênciamento': r.seq === true ? 'Sim' : (r.seq === false ? 'Não' : 'Indefinido'),
         'Turno': (r.turno||[]).map(function(t){ return TURNO_LABEL[t]||t; }).join(' / '),
         'Caixa': (r.caixa||[]).map(function(c){ return CAIXA_LABEL[c]||c; }).join(' / ')
       };
@@ -2037,11 +2033,11 @@ function CMRL_initRegistros(){
         }
         var idxData=col('data'), idxCod=col('cód','cod','material'), idxDesc=col('descri','texto'),
             idxQtd=col('quant','qtd'), idxHora=col('horár','horar','hora'),
-            idxHU=col('hu'), idxOT=col('ot'), idxTurno=col('turno'), idxCaixa=col('caixa');
+            idxHU=col('hu'), idxOT=col('ot'), idxSeq=col('etiqueta','sequ'), idxTurno=col('turno'), idxCaixa=col('caixa');
 
         var temCabecalho = (idxCod !== -1 || idxData !== -1);
         var start = temCabecalho ? 1 : 0;
-        if(!temCabecalho){ idxData=0; idxCod=1; idxDesc=2; idxQtd=3; idxHora=4; idxHU=5; idxOT=6; idxTurno=7; idxCaixa=8; }
+        if(!temCabecalho){ idxData=0; idxCod=1; idxDesc=2; idxQtd=3; idxHora=4; idxHU=5; idxOT=6; idxSeq=7; idxTurno=8; idxCaixa=9; }
 
         function get(row, idx){ return (idx===-1 || !row) ? '' : (row[idx]==null?'':row[idx]); }
         function pad2(n){ return String(n).padStart(2,'0'); }
@@ -2107,6 +2103,7 @@ function CMRL_initRegistros(){
             horario: parseHora(get(row, idxHora)),
             hu: parseBool(get(row, idxHU)),
             ot: parseBool(get(row, idxOT)),
+            seq: parseBool(get(row, idxSeq)),
             turno: parseTurno(get(row, idxTurno)),
             caixa: parseCaixa(get(row, idxCaixa)),
             criadoEm: base + i
