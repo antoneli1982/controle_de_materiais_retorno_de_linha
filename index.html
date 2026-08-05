@@ -244,6 +244,83 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .chk.on .box{background:var(--yellow);border-color:var(--yellow)}
   .chk.on .box::after{content:"✓";color:#15181c;font-size:10px;font-weight:800}
 
+  /* ---- Marcações com número (campo abre na frente) ---- */
+  .marc-item{display:flex;align-items:stretch;gap:8px}
+  .marc-item .chk{flex:1 1 auto;min-width:0}
+  .marc-item .marc-num{display:none;flex:0 0 128px;width:128px;text-align:center;
+    font-family:var(--font-mono);letter-spacing:.4px;padding:10px 8px;text-transform:uppercase}
+  .marc-item.on .marc-num{display:block;animation:marcIn .16s ease}
+  @keyframes marcIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+
+  /* ---- Fotos (peça + etiqueta) ---- */
+  .foto-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .foto-box{border:1px solid var(--line);background:var(--panel-2);border-radius:3px;
+    padding:9px;display:flex;flex-direction:column;gap:7px}
+  .foto-title{font-family:var(--font-head);font-size:9.5px;font-weight:500;text-transform:uppercase;
+    letter-spacing:.8px;color:var(--txt-dim)}
+  .foto-drop{position:relative;cursor:pointer;border:1px dashed var(--txt-faint);border-radius:3px;
+    height:116px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:var(--panel);transition:.13s}
+  .foto-drop:hover{border-color:var(--yellow)}
+  .foto-drop img{display:none;width:100%;height:100%;object-fit:cover}
+  .foto-drop.has img{display:block}
+  .foto-drop .ph{text-align:center;color:var(--txt-faint);font-size:10.5px;line-height:1.5;padding:6px}
+  .foto-drop .ph .ic{font-size:23px;display:block;margin-bottom:3px}
+  .foto-drop.has .ph{display:none}
+  .foto-drop.busy{opacity:.55;pointer-events:none}
+  .foto-bar{display:flex;gap:6px}
+  .foto-btn{flex:1 1 auto;cursor:pointer;background:var(--panel);border:1px solid var(--line);
+    color:var(--txt-dim);border-radius:3px;padding:7px 6px;font-family:var(--font-head);
+    font-size:9.5px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;transition:.13s}
+  .foto-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+  .foto-btn.danger{flex:0 0 42px}
+  .foto-btn.danger:hover{border-color:var(--red);color:var(--red)}
+  .foto-meta{font-size:10px;color:var(--txt-faint);font-family:var(--font-mono);min-height:13px;letter-spacing:.2px}
+  @media(max-width:560px){
+    .marc-item{flex-direction:column}
+    .marc-item .marc-num{flex:1 1 auto;width:100%}
+    .foto-row{grid-template-columns:1fr}
+  }
+
+  /* ---- Miniaturas na tabela + visualizador ---- */
+  .tb-fotos{display:flex;gap:4px;align-items:center}
+  .tb-thumb{width:36px;height:36px;border-radius:3px;object-fit:cover;
+    border:1px solid var(--line);cursor:pointer;transition:.13s}
+  .tb-thumb:hover{border-color:var(--yellow);transform:scale(1.08)}
+  #foto-lb{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);
+    display:none;align-items:center;justify-content:center;padding:26px}
+  #foto-lb.on{display:flex}
+  #foto-lb img{max-width:96vw;max-height:86vh;object-fit:contain;border-radius:4px;
+    box-shadow:0 10px 40px rgba(0,0,0,.6)}
+  #foto-lb .lb-cap{position:absolute;top:16px;left:0;right:0;text-align:center;color:#fff;
+    font-family:var(--font-head);font-size:11px;letter-spacing:1.2px;text-transform:uppercase}
+  #foto-lb .lb-x{position:absolute;top:12px;right:16px;color:#fff;background:none;border:none;
+    font-size:26px;cursor:pointer;line-height:1}
+
+  /* ---- Modal da folha de ocorrência ---- */
+  #doc-modal{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.66);
+    display:none;align-items:center;justify-content:center;padding:20px}
+  #doc-modal.on{display:flex}
+  .doc-card{background:var(--panel);border:1px solid var(--line);border-radius:5px;
+    width:100%;max-width:440px;max-height:92vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+  .doc-head{padding:16px 18px 12px;border-bottom:1px solid var(--line-soft)}
+  .doc-tag{display:inline-block;font-family:var(--font-head);font-size:9px;font-weight:600;
+    letter-spacing:1.3px;text-transform:uppercase;color:var(--yellow);margin-bottom:6px}
+  .doc-head h3{font-family:var(--font-head);font-size:15px;font-weight:600;letter-spacing:.3px}
+  .doc-head p{font-size:11.5px;color:var(--txt-dim);margin-top:4px}
+  .doc-body{padding:14px 18px 6px}
+  .doc-field{margin-bottom:12px}
+  .doc-field label{display:block;font-family:var(--font-head);font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:1px;color:var(--txt-dim);margin-bottom:6px}
+  .doc-note{font-size:11px;color:var(--txt-faint);line-height:1.5;margin:2px 0 10px}
+  .doc-foot{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line-soft)}
+  .doc-btn{flex:1;cursor:pointer;background:var(--panel-2);border:1px solid var(--line);color:var(--txt-dim);
+    border-radius:3px;padding:11px;font-family:var(--font-head);font-size:11px;font-weight:600;
+    letter-spacing:.9px;text-transform:uppercase;transition:.13s}
+  .doc-btn:hover{border-color:var(--txt-faint);color:var(--txt)}
+  .doc-btn.primary{background:var(--blue);border-color:var(--blue-soft);color:#fff}
+  .doc-btn.primary:hover{background:var(--blue-soft)}
+
   .submit{width:100%;cursor:pointer;background:var(--blue);color:#fff;border:1px solid var(--blue-soft);border-radius:3px;
     padding:13px;font-family:var(--font-head);font-size:12.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
     transition:.13s;margin-top:4px}
@@ -898,11 +975,52 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         </div>
 
         <div class="field">
-          <label>Marcações</label>
+          <label>Marcações <span style="font-weight:400;color:var(--txt-faint);font-size:11px;text-transform:none;letter-spacing:0">(clique para abrir o campo do número)</span></label>
           <div class="chk-row">
-            <div class="chk" id="chk-hu"><div class="box"></div>HU</div>
-            <div class="chk" id="chk-ot"><div class="box"></div>OT</div>
-            <div class="chk" id="chk-seq" style="grid-column:1 / -1"><div class="box"></div>ETIQUETA DE SEQUÊNCIAMENTO</div>
+            <div class="marc-item" id="marc-hu">
+              <div class="chk" id="chk-hu"><div class="box"></div>HU</div>
+              <input type="text" class="marc-num" id="f-hu-num" placeholder="Nº HU" maxlength="30" autocomplete="off">
+            </div>
+            <div class="marc-item" id="marc-ot">
+              <div class="chk" id="chk-ot"><div class="box"></div>OT</div>
+              <input type="text" class="marc-num" id="f-ot-num" placeholder="Nº OT" maxlength="30" autocomplete="off">
+            </div>
+            <div class="marc-item" id="marc-seq" style="grid-column:1 / -1">
+              <div class="chk" id="chk-seq"><div class="box"></div>ETIQUETA DE SEQUÊNCIAMENTO</div>
+              <input type="text" class="marc-num" id="f-seq-num" placeholder="Nº ETIQUETA" maxlength="30" autocomplete="off">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Fotos <span style="font-weight:400;color:var(--txt-faint);font-size:11px;text-transform:none;letter-spacing:0">(comprimidas automaticamente ao subir)</span></label>
+          <div class="foto-row">
+            <div class="foto-box">
+              <div class="foto-title">📦 Foto da peça</div>
+              <div class="foto-drop" id="drop-peca" data-foto="peca" role="button" tabindex="0" aria-label="Adicionar foto da peça">
+                <img id="img-peca" alt="Foto da peça">
+                <div class="ph"><span class="ic">📷</span>Toque para tirar<br>ou escolher a foto</div>
+              </div>
+              <div class="foto-bar">
+                <button type="button" class="foto-btn" data-pick="peca">Selecionar</button>
+                <button type="button" class="foto-btn danger" data-clear="peca" title="Remover foto">✕</button>
+              </div>
+              <div class="foto-meta" id="meta-peca"></div>
+              <input type="file" accept="image/*" id="file-peca" style="display:none">
+            </div>
+            <div class="foto-box">
+              <div class="foto-title">🏷️ Foto da etiqueta</div>
+              <div class="foto-drop" id="drop-etiqueta" data-foto="etiqueta" role="button" tabindex="0" aria-label="Adicionar foto da etiqueta">
+                <img id="img-etiqueta" alt="Foto da etiqueta">
+                <div class="ph"><span class="ic">📷</span>Toque para tirar<br>ou escolher a foto</div>
+              </div>
+              <div class="foto-bar">
+                <button type="button" class="foto-btn" data-pick="etiqueta">Selecionar</button>
+                <button type="button" class="foto-btn danger" data-clear="etiqueta" title="Remover foto">✕</button>
+              </div>
+              <div class="foto-meta" id="meta-etiqueta"></div>
+              <input type="file" accept="image/*" id="file-etiqueta" style="display:none">
+            </div>
           </div>
         </div>
 
@@ -948,7 +1066,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           <thead>
             <tr>
               <th>Data</th><th>Código</th><th>Descrição</th><th>Qtd</th><th>Horário</th>
-              <th>Marcações</th><th>Turno</th><th>Caixa</th><th>Portão</th><th>Ações</th>
+              <th>Marcações</th><th>Turno</th><th>Caixa</th><th>Portão</th><th>Fotos</th><th>Ações</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -1850,6 +1968,7 @@ function CMRL_initRegistros(){
   var portaoSel = (function(){ try{ return localStorage.getItem('cmrl_portao') || null; }catch(e){ return null; } })();
   var caixaSel = [];
   var huOn = false, otOn = false, seqOn = false;
+  var fotoPeca = null, fotoEtiqueta = null;   // dataURL comprimido (ou null)
 
   /* ---- Tela cheia ---- */
   (function(){
@@ -1911,7 +2030,18 @@ function CMRL_initRegistros(){
     return seeded;
   }
   function saveAll(list){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }catch(e){
+      /* Fotos ocupam espaço: avisa em vez de falhar em silêncio */
+      var nome = (e && e.name) || '';
+      if(nome === 'QuotaExceededError' || nome === 'NS_ERROR_DOM_QUOTA_REACHED' || /quota/i.test(e && e.message || '')){
+        alert('O armazenamento local do navegador está cheio (as fotos ocupam bastante espaço).\n\n'
+            + 'Exporte os registros para Excel e apague ou edite registros antigos removendo as fotos '
+            + 'para liberar espaço. Os dados novos podem não ter sido salvos localmente.');
+      }
+      console.error('[Registros] Falha ao salvar no localStorage:', e);
+    }
     if(window.CMRL_pushRegistros) window.CMRL_pushRegistros(list);
   }
   var registros = loadAll();
@@ -1976,17 +2106,182 @@ function CMRL_initRegistros(){
   }
   bindSegMulti('seg-caixa', function(){ return caixaSel; });
 
-  /* ---- Checkboxes HU / OT ---- */
-  document.getElementById('chk-hu').addEventListener('click', function(){
-    huOn = !huOn; this.classList.toggle('on', huOn);
-  });
-  document.getElementById('chk-ot').addEventListener('click', function(){
-    otOn = !otOn; this.classList.toggle('on', otOn);
+  /* ---- Checkboxes HU / OT / SEQ: ao clicar abre o campo do número na frente ---- */
+  var MARCACOES = [
+    {chk:'chk-hu',  item:'marc-hu',  num:'f-hu-num',  get:function(){return huOn;},  set:function(v){huOn=v;}},
+    {chk:'chk-ot',  item:'marc-ot',  num:'f-ot-num',  get:function(){return otOn;},  set:function(v){otOn=v;}},
+    {chk:'chk-seq', item:'marc-seq', num:'f-seq-num', get:function(){return seqOn;}, set:function(v){seqOn=v;}}
+  ];
+  MARCACOES.forEach(function(m){
+    var chk = document.getElementById(m.chk);
+    var item = document.getElementById(m.item);
+    var inp = document.getElementById(m.num);
+    if(!chk || !item || !inp) return;
+    chk.addEventListener('click', function(){
+      var novo = !m.get();
+      m.set(novo);
+      chk.classList.toggle('on', novo);
+      item.classList.toggle('on', novo);
+      if(novo){ setTimeout(function(){ inp.focus(); }, 60); }
+      else { inp.value = ''; }
+    });
+    /* Enter no campo do número não envia o formulário sem querer */
+    inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); } });
   });
 
-  document.getElementById('chk-seq').addEventListener('click', function(){
-    seqOn = !seqOn; this.classList.toggle('on', seqOn);
+  function setMarcacao(idx, ligado, numero){
+    var m = MARCACOES[idx];
+    m.set(!!ligado);
+    document.getElementById(m.chk).classList.toggle('on', !!ligado);
+    document.getElementById(m.item).classList.toggle('on', !!ligado);
+    document.getElementById(m.num).value = ligado ? (numero || '') : '';
+  }
+  function getNumero(idx){
+    var v = document.getElementById(MARCACOES[idx].num).value.trim().toUpperCase();
+    return v || null;
+  }
+
+  /* ---- Fotos: compressão no navegador antes de guardar ---- */
+  var FOTO_LADOS   = [1100, 900, 750, 620];   // reduz a resolução em etapas
+  var FOTO_QUALIDS = [0.75, 0.65, 0.55];      // qualidade nunca cai abaixo de 0,55
+  var FOTO_ALVO_KB = 110;                     // tamanho alvo por foto
+
+  function desenhar(img, lado){
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    var escala = Math.min(1, lado / Math.max(w, h));
+    var cw = Math.max(1, Math.round(w * escala));
+    var ch = Math.max(1, Math.round(h * escala));
+    var canvas = document.createElement('canvas');
+    canvas.width = cw; canvas.height = ch;
+    var ctx = canvas.getContext('2d');
+    if(ctx.imageSmoothingQuality) ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(img, 0, 0, cw, ch);
+    return { canvas: canvas, w: cw, h: ch };
+  }
+
+  function comprimirImagem(file){
+    return new Promise(function(resolve, reject){
+      if(!file || !/^image\//.test(file.type||'')){ reject(new Error('Arquivo não é uma imagem.')); return; }
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error('Falha ao ler o arquivo.')); };
+      reader.onload = function(ev){
+        var img = new Image();
+        img.onerror = function(){ reject(new Error('Falha ao abrir a imagem.')); };
+        img.onload = function(){
+          var limite = FOTO_ALVO_KB * 1024 * 1.37;  // base64 ocupa ~37% a mais que o binário
+          var melhor = null;
+          /* Prioriza legibilidade: primeiro diminui a resolução, só depois a qualidade.
+             Assim o número da etiqueta continua legível em vez de virar borrão JPEG. */
+          for(var i = 0; i < FOTO_LADOS.length; i++){
+            var d = desenhar(img, FOTO_LADOS[i]);
+            for(var j = 0; j < FOTO_QUALIDS.length; j++){
+              var out = d.canvas.toDataURL('image/jpeg', FOTO_QUALIDS[j]);
+              if(!melhor || out.length < melhor.dataUrl.length){
+                melhor = { dataUrl: out, w: d.w, h: d.h, q: FOTO_QUALIDS[j] };
+              }
+              if(out.length <= limite){
+                resolve({ dataUrl: out, w: d.w, h: d.h, q: FOTO_QUALIDS[j],
+                          bytes: Math.round(out.length * 0.75) });
+                return;
+              }
+            }
+          }
+          /* Nem no menor tamanho coube: devolve a menor versão obtida */
+          melhor.bytes = Math.round(melhor.dataUrl.length * 0.75);
+          resolve(melhor);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function kb(bytes){ return (bytes/1024).toFixed(0) + ' KB'; }
+
+  function pintarFoto(tipo, dataUrl, metaTxt){
+    var drop = document.getElementById('drop-'+tipo);
+    var img = document.getElementById('img-'+tipo);
+    var meta = document.getElementById('meta-'+tipo);
+    if(dataUrl){
+      img.src = dataUrl;
+      drop.classList.add('has');
+      meta.textContent = metaTxt || '';
+    }else{
+      img.removeAttribute('src');
+      drop.classList.remove('has');
+      meta.textContent = '';
+    }
+  }
+
+  function setFoto(tipo, dataUrl){
+    if(tipo === 'peca') fotoPeca = dataUrl || null;
+    else fotoEtiqueta = dataUrl || null;
+  }
+
+  function processarArquivoFoto(tipo, file){
+    if(!file) return;
+    var drop = document.getElementById('drop-'+tipo);
+    var meta = document.getElementById('meta-'+tipo);
+    var origKB = kb(file.size);
+    drop.classList.add('busy');
+    meta.textContent = 'Comprimindo…';
+    comprimirImagem(file).then(function(res){
+      setFoto(tipo, res.dataUrl);
+      pintarFoto(tipo, res.dataUrl, origKB + ' → ' + kb(res.bytes) + ' · ' + res.w + '×' + res.h);
+    }).catch(function(err){
+      meta.textContent = '⚠ ' + (err.message || 'Erro ao processar a foto.');
+    }).then(function(){
+      drop.classList.remove('busy');
+    });
+  }
+
+  ['peca','etiqueta'].forEach(function(tipo){
+    var drop = document.getElementById('drop-'+tipo);
+    var input = document.getElementById('file-'+tipo);
+    if(!drop || !input) return;
+    function abrir(){ input.value = ''; input.click(); }
+    drop.addEventListener('click', abrir);
+    drop.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(); }
+    });
+    input.addEventListener('change', function(e){
+      processarArquivoFoto(tipo, e.target.files && e.target.files[0]);
+    });
   });
+  document.querySelectorAll('[data-pick]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tipo = btn.getAttribute('data-pick');
+      var input = document.getElementById('file-'+tipo);
+      input.value = ''; input.click();
+    });
+  });
+  document.querySelectorAll('[data-clear]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tipo = btn.getAttribute('data-clear');
+      setFoto(tipo, null);
+      pintarFoto(tipo, null);
+      document.getElementById('file-'+tipo).value = '';
+    });
+  });
+
+  /* ---- Visualizador de foto em tela cheia ---- */
+  (function(){
+    var lb = document.getElementById('foto-lb');
+    if(!lb) return;
+    var lbImg = document.getElementById('foto-lb-img');
+    var lbCap = document.getElementById('foto-lb-cap');
+    window.CMRL_abrirFoto = function(src, legenda){
+      lbImg.src = src;
+      lbCap.textContent = legenda || '';
+      lb.classList.add('on');
+    };
+    function fechar(){ lb.classList.remove('on'); lbImg.removeAttribute('src'); }
+    lb.addEventListener('click', function(e){ if(e.target === lb || e.target.id === 'foto-lb-x') fechar(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && lb.classList.contains('on')) fechar(); });
+  })();
 
   function resetForm(){
     editId = null;
@@ -1997,11 +2292,13 @@ function CMRL_initRegistros(){
     document.getElementById('f-descricao').value = '';
     document.getElementById('f-qtd').value = '';
     document.getElementById('f-horario').value = agoraHM();
-    turnoSel = null; caixaSel = []; huOn = false; otOn = false; seqOn = false;
+    turnoSel = null; caixaSel = [];
     document.querySelectorAll('#seg-turno .seg-btn, #seg-caixa .seg-btn').forEach(function(b){ b.classList.remove('on'); });
-    document.getElementById('chk-hu').classList.remove('on');
-    document.getElementById('chk-ot').classList.remove('on');
-    document.getElementById('chk-seq').classList.remove('on');
+    setMarcacao(0, false); setMarcacao(1, false); setMarcacao(2, false);
+    setFoto('peca', null); pintarFoto('peca', null);
+    setFoto('etiqueta', null); pintarFoto('etiqueta', null);
+    document.getElementById('file-peca').value = '';
+    document.getElementById('file-etiqueta').value = '';
     atualizarDescricao();
   }
 
@@ -2102,7 +2399,13 @@ function CMRL_initRegistros(){
       id: editId || Date.now(),
       data: data, codigo: codigo, descricao: document.getElementById('f-descricao').value.trim(),
       qtd: qtd, horario: horario,
-      hu: huOn, ot: otOn, seq: seqOn, turno: [turnoSel], caixa: caixaSel.slice(),
+      hu: huOn, ot: otOn, seq: seqOn,
+      huNum: huOn ? getNumero(0) : null,
+      otNum: otOn ? getNumero(1) : null,
+      seqNum: seqOn ? getNumero(2) : null,
+      fotoPeca: fotoPeca || null,
+      fotoEtiqueta: fotoEtiqueta || null,
+      turno: [turnoSel], caixa: caixaSel.slice(),
       portao: editId ? (((registros.find(function(r){return r.id===editId;})||{}).portao) || portaoSel || null) : portaoSel,
       criadoEm: editId ? (registros.find(function(r){return r.id===editId;})||{}).criadoEm || Date.now() : Date.now()
     };
@@ -2245,6 +2548,12 @@ function CMRL_initRegistros(){
     return p[2]+'/'+p[1]+'/'+p[0];
   }
 
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
   function render(){
     var lista = filtrados();
 
@@ -2270,9 +2579,14 @@ function CMRL_initRegistros(){
     }else{
       document.getElementById('empty-state').style.display = 'none';
       tbody.innerHTML = slice.map(function(r){
-        var badgeHU = r.hu === true ? '<span class="badge hu">HU</span>' : (r.hu === null ? '<span class="badge unk">HU?</span>' : '');
-        var badgeOT = r.ot === true ? '<span class="badge ot">OT</span>' : (r.ot === null ? '<span class="badge unk">OT?</span>' : '');
-        var badgeSEQ = r.seq === true ? '<span class="badge seq">SEQ</span>' : (r.seq === null ? '<span class="badge unk">SEQ?</span>' : '');
+        function suf(n){ return n ? ' ' + esc(String(n)) : ''; }
+        var badgeHU = r.hu === true ? '<span class="badge hu">HU'+suf(r.huNum)+'</span>' : (r.hu === null ? '<span class="badge unk">HU?</span>' : '');
+        var badgeOT = r.ot === true ? '<span class="badge ot">OT'+suf(r.otNum)+'</span>' : (r.ot === null ? '<span class="badge unk">OT?</span>' : '');
+        var badgeSEQ = r.seq === true ? '<span class="badge seq">SEQ'+suf(r.seqNum)+'</span>' : (r.seq === null ? '<span class="badge unk">SEQ?</span>' : '');
+        var thumbs = '';
+        if(r.fotoPeca)     thumbs += '<img class="tb-thumb" src="'+r.fotoPeca+'" alt="Foto da peça" title="Foto da peça" data-foto-id="'+r.id+'" data-foto-tipo="peca">';
+        if(r.fotoEtiqueta) thumbs += '<img class="tb-thumb" src="'+r.fotoEtiqueta+'" alt="Foto da etiqueta" title="Foto da etiqueta" data-foto-id="'+r.id+'" data-foto-tipo="etiqueta">';
+        var celFotos = thumbs ? '<div class="tb-fotos">'+thumbs+'</div>' : '<span style="color:var(--txt-faint)">—</span>';
         var marcacoes = (badgeHU + ' ' + badgeOT + ' ' + badgeSEQ).trim();
         if(!marcacoes) marcacoes = '<span style="color:var(--txt-faint)">—</span>';
         var turnos = (r.turno && r.turno.length) ? r.turno.map(function(t){ return TURNO_LABEL[t]||t; }).join(' / ') : '<span style="color:var(--txt-faint)">—</span>';
@@ -2289,8 +2603,11 @@ function CMRL_initRegistros(){
           '<td data-label="Turno">'+turnos+'</td>' +
           '<td data-label="Caixa">'+caixas+'</td>' +
           '<td data-label="Portão">'+(r.portao ? '<span class="badge portao">'+r.portao+'</span>' : '<span style="color:var(--txt-faint)">—</span>')+'</td>' +
+          '<td data-label="Fotos">'+celFotos+'</td>' +
           '<td data-label="Ações" class="acoes-cell"><div class="row-actions">' +
             '<button class="icon-btn" data-edit="'+r.id+'">✎ Editar</button>' +
+            '<button class="icon-btn" data-doc="pdf" data-doc-id="'+r.id+'" title="Gerar folha de ocorrência em PDF">📄 PDF</button>' +
+            '<button class="icon-btn" data-doc="pptx" data-doc-id="'+r.id+'" title="Gerar slide de ocorrência em PowerPoint">📽 PPTX</button>' +
             '<button class="icon-btn danger" data-del="'+r.id+'">🗑 Excluir</button>' +
           '</div></td>' +
         '</tr>';
@@ -2307,6 +2624,24 @@ function CMRL_initRegistros(){
     tbody.querySelectorAll('[data-del]').forEach(function(btn){
       btn.addEventListener('click', function(){ removeReg(parseInt(btn.getAttribute('data-del'),10)); });
     });
+    tbody.querySelectorAll('[data-doc-id]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var reg = registros.find(function(x){ return x.id === parseInt(btn.getAttribute('data-doc-id'),10); });
+        if(reg && window.CMRL_gerarOcorrencia) window.CMRL_gerarOcorrencia(reg, btn.getAttribute('data-doc'));
+      });
+    });
+    tbody.querySelectorAll('[data-foto-id]').forEach(function(im){
+      im.addEventListener('click', function(){
+        var id = parseInt(im.getAttribute('data-foto-id'), 10);
+        var tipo = im.getAttribute('data-foto-tipo');
+        var reg = registros.find(function(x){ return x.id === id; });
+        if(!reg) return;
+        var src = tipo === 'peca' ? reg.fotoPeca : reg.fotoEtiqueta;
+        if(src && window.CMRL_abrirFoto){
+          window.CMRL_abrirFoto(src, (tipo === 'peca' ? '📦 Peça' : '🏷️ Etiqueta') + ' · ' + reg.codigo);
+        }
+      });
+    });
   }
 
   function startEdit(id){
@@ -2321,16 +2656,19 @@ function CMRL_initRegistros(){
     document.getElementById('f-horario').value = (r.horario && /^\d{2}:\d{2}$/.test(r.horario)) ? r.horario : agoraHM();
     turnoSel = (r.turno && r.turno[0]) || null;
     caixaSel = (r.caixa || []).slice();
-    huOn = r.hu === true; otOn = r.ot === true; seqOn = r.seq === true;
     document.querySelectorAll('#seg-turno .seg-btn').forEach(function(b){
       b.classList.toggle('on', b.getAttribute('data-v') === turnoSel);
     });
     document.querySelectorAll('#seg-caixa .seg-btn').forEach(function(b){
       b.classList.toggle('on', caixaSel.indexOf(b.getAttribute('data-v')) >= 0);
     });
-    document.getElementById('chk-hu').classList.toggle('on', huOn);
-    document.getElementById('chk-ot').classList.toggle('on', otOn);
-    document.getElementById('chk-seq').classList.toggle('on', seqOn);
+    setMarcacao(0, r.hu === true,  r.huNum);
+    setMarcacao(1, r.ot === true,  r.otNum);
+    setMarcacao(2, r.seq === true, r.seqNum);
+    setFoto('peca', r.fotoPeca || null);
+    pintarFoto('peca', r.fotoPeca || null, r.fotoPeca ? 'Foto salva' : '');
+    setFoto('etiqueta', r.fotoEtiqueta || null);
+    pintarFoto('etiqueta', r.fotoEtiqueta || null, r.fotoEtiqueta ? 'Foto salva' : '');
     atualizarDescricao();
     if(r.descricao) document.getElementById('f-descricao').value = r.descricao;
     if(r.importado){
@@ -2371,8 +2709,13 @@ function CMRL_initRegistros(){
         'Quantidade': r.qtd,
         'Horário': r.horario,
         'HU': r.hu === true ? 'Sim' : (r.hu === false ? 'Não' : 'Indefinido'),
+        'Nº HU': r.huNum || '',
         'OT': r.ot === true ? 'Sim' : (r.ot === false ? 'Não' : 'Indefinido'),
+        'Nº OT': r.otNum || '',
         'Etiqueta de Sequênciamento': r.seq === true ? 'Sim' : (r.seq === false ? 'Não' : 'Indefinido'),
+        'Nº Etiqueta': r.seqNum || '',
+        'Foto da Peça': r.fotoPeca ? 'Sim' : 'Não',
+        'Foto da Etiqueta': r.fotoEtiqueta ? 'Sim' : 'Não',
         'Turno': (r.turno||[]).map(function(t){ return TURNO_LABEL[t]||t; }).join(' / '),
         'Caixa': (r.caixa||[]).map(function(c){ return CAIXA_LABEL[c]||c; }).join(' / '),
         'Portão': r.portao || ''
@@ -3150,6 +3493,543 @@ function baixarXlsx(wb, nomeArquivo){
 
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', addPrintButton); }
   else { addPrintButton(); }
+})();
+</script>
+
+<div id="doc-modal" role="dialog" aria-modal="true" aria-label="Dados da folha de ocorrência">
+  <div class="doc-card">
+    <div class="doc-head">
+      <span class="doc-tag" id="doc-tag">FOLHA DE OCORRÊNCIA</span>
+      <h3 id="doc-title">Gerar documento</h3>
+      <p id="doc-sub"></p>
+    </div>
+    <div class="doc-body">
+      <div class="doc-field">
+        <label for="doc-resp">Responsável pela área</label>
+        <input type="text" id="doc-resp" placeholder="Nome do responsável" autocomplete="off">
+      </div>
+      <div class="doc-field">
+        <label for="doc-lider">Líder comunicado</label>
+        <input type="text" id="doc-lider" placeholder="Nome do líder avisado da ocorrência" autocomplete="off">
+      </div>
+      <div class="doc-field">
+        <label for="doc-posto">Posto de montagem</label>
+        <input type="text" id="doc-posto" placeholder="Ex.: MOA11390P1" autocomplete="off">
+      </div>
+      <div class="doc-field">
+        <label for="doc-ponto">Ponto de detecção</label>
+        <input type="text" id="doc-ponto" placeholder="Ex.: LINHA 1" autocomplete="off">
+      </div>
+      <div class="doc-note">Estes quatro campos não existem no registro — ficam guardados e vêm preenchidos na próxima vez.</div>
+    </div>
+    <div class="doc-foot">
+      <button type="button" class="doc-btn" id="doc-cancel">Cancelar</button>
+      <button type="button" class="doc-btn primary" id="doc-ok">Gerar</button>
+    </div>
+  </div>
+</div>
+
+<div id="foto-lb" role="dialog" aria-modal="true" aria-label="Visualizar foto">
+  <div class="lb-cap" id="foto-lb-cap"></div>
+  <button type="button" class="lb-x" id="foto-lb-x" aria-label="Fechar">&times;</button>
+  <img id="foto-lb-img" alt="Foto ampliada">
+</div>
+
+<script>
+/* ==========================================================================
+   FOLHA DE OCORRÊNCIA — gera PDF (impressão) e PPTX (arquivo real)
+   O .pptx é montado do zero: ZIP "stored" + OOXML mínimo, sem bibliotecas
+   externas, para o app continuar funcionando totalmente offline.
+   ========================================================================== */
+(function(){
+  "use strict";
+
+  var AZUL = '00235A', CINZA = 'D9D9D9', BRANCO = 'FFFFFF', PRETO = '1A1A1A';
+  var PREFS_KEY = 'cmrl-ocorrencia-prefs';
+
+  var TXT_FALHA  = 'Peças encontradas em embalagens vazias retornadas da Produção.';
+  var TXT_RELATO = 'Foi realizada a verificação das embalagens vazias retornadas da Produção, conforme '
+                 + 'procedimento, sendo identificada, indevidamente, a presença de uma peça no interior '
+                 + 'de uma dessas embalagens.';
+  var TXT_ACAO   = 'Segregação da peça para análise de devolução à linha';
+
+  var TURNOS = {'1':'1º turno','2':'2º turno','3':'3º turno'};
+  var CAIXAS = {'plastica':'Plástica (EKLT)','papelao':'Papelão'};
+
+  /* ---------- utilidades ---------- */
+  function esc(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function xesc(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  }
+  function fmtData(iso){
+    if(!iso) return '—';
+    var p = String(iso).split('-');
+    return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : String(iso);
+  }
+  function prefs(){
+    try{ return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; }catch(e){ return {}; }
+  }
+  function salvarPrefs(p){
+    try{ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }catch(e){}
+  }
+  function nomeArquivo(reg, ext){
+    var cod = String(reg.codigo||'registro').replace(/[^A-Za-z0-9._-]+/g,'');
+    return 'Ocorrencia_' + cod + '_' + (reg.data||'') + '.' + ext;
+  }
+
+  /* Monta o conjunto de campos da folha a partir do registro + respostas do modal */
+  function montarDados(reg, extra){
+    var otHu = (reg.otNum || '—') + ' / ' + (reg.huNum || '—');
+    if(reg.seqNum) otHu += '   ·   ETIQ. SEQ.: ' + reg.seqNum;
+
+    var material = reg.descricao ? (reg.descricao + ' — ' + reg.codigo) : String(reg.codigo||'—');
+    var turno = (reg.turno && reg.turno.length)
+      ? reg.turno.map(function(t){ return TURNOS[t] || t; }).join(' / ') : '—';
+    var caixa = (reg.caixa && reg.caixa.length)
+      ? reg.caixa.map(function(c){ return CAIXAS[c] || c; }).join(' / ') : '—';
+
+    return {
+      dataOcorrencia: fmtData(reg.data),
+      falha: TXT_FALHA,
+      relato: TXT_RELATO,
+      acoes: 'Ocorrência relatada ao Líder responsável ' + (extra.lider || '—'),
+      responsavel: extra.resp || '—',
+      otHu: otHu,
+      material: material,
+      turno: turno,
+      ponto: extra.ponto || reg.portao || '—',
+      dataHora: fmtData(reg.data) + ' – ' + (reg.horario || '—'),
+      acaoImediata: TXT_ACAO,
+      posto: extra.posto || '—',
+      rodape: 'Quantidade: ' + (reg.qtd==null?'—':reg.qtd) + '   ·   Caixa: ' + caixa
+    };
+  }
+
+  /* Lê as fotos do registro: dataURL -> bytes + dimensões reais */
+  function carregarFotos(reg){
+    var lista = [];
+    if(reg.fotoPeca)     lista.push({src:reg.fotoPeca,     titulo:'FOTO DA PEÇA'});
+    if(reg.fotoEtiqueta) lista.push({src:reg.fotoEtiqueta, titulo:'FOTO DA ETIQUETA'});
+    return Promise.all(lista.map(function(f){
+      return new Promise(function(resolve){
+        var img = new Image();
+        img.onload = function(){
+          var m = /^data:(image\/(\w+));base64,(.*)$/.exec(f.src);
+          if(!m){ resolve(null); return; }
+          var ext = m[2] === 'jpg' ? 'jpeg' : m[2];
+          var bin = atob(m[3]);
+          var bytes = new Uint8Array(bin.length);
+          for(var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+          resolve({ bytes:bytes, ext:ext, w:img.naturalWidth, h:img.naturalHeight,
+                    titulo:f.titulo, src:f.src });
+        };
+        img.onerror = function(){ resolve(null); };
+        img.src = f.src;
+      });
+    })).then(function(r){ return r.filter(Boolean); });
+  }
+
+  /* ====================== ZIP (método "stored") ====================== */
+  var CRC_TAB = (function(){
+    var t = new Uint32Array(256), c, n, k;
+    for(n=0;n<256;n++){ c=n; for(k=0;k<8;k++){ c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); } t[n]=c>>>0; }
+    return t;
+  })();
+  function crc32(buf){
+    var c = 0xFFFFFFFF;
+    for(var i=0;i<buf.length;i++) c = CRC_TAB[(c ^ buf[i]) & 0xFF] ^ (c>>>8);
+    return (c ^ 0xFFFFFFFF)>>>0;
+  }
+  function utf8(str){
+    if(typeof TextEncoder !== 'undefined') return new TextEncoder().encode(str);
+    var s = unescape(encodeURIComponent(str)), a = new Uint8Array(s.length);
+    for(var i=0;i<s.length;i++) a[i] = s.charCodeAt(i);
+    return a;
+  }
+  function zipStore(files){
+    var chunks = [], central = [], offset = 0;
+    function u16(a,v,p){ a[p]=v&255; a[p+1]=(v>>8)&255; }
+    function u32(a,v,p){ a[p]=v&255; a[p+1]=(v>>8)&255; a[p+2]=(v>>16)&255; a[p+3]=(v>>>24)&255; }
+
+    files.forEach(function(f){
+      var name = utf8(f.name), data = f.data, crc = crc32(data);
+      var local = new Uint8Array(30 + name.length);
+      u32(local,0x04034b50,0); u16(local,20,4); u16(local,0,6); u16(local,0,8);
+      u16(local,0,10); u16(local,0x2821,12);
+      u32(local,crc,14); u32(local,data.length,18); u32(local,data.length,22);
+      u16(local,name.length,26); u16(local,0,28);
+      local.set(name,30);
+      chunks.push(local, data);
+
+      var cen = new Uint8Array(46 + name.length);
+      u32(cen,0x02014b50,0); u16(cen,20,4); u16(cen,20,6); u16(cen,0,8); u16(cen,0,10);
+      u16(cen,0,12); u16(cen,0x2821,14);
+      u32(cen,crc,16); u32(cen,data.length,20); u32(cen,data.length,24);
+      u16(cen,name.length,28); u16(cen,0,30); u16(cen,0,32); u16(cen,0,34);
+      u16(cen,0,36); u32(cen,0,38); u32(cen,offset,42);
+      cen.set(name,46);
+      central.push(cen);
+      offset += local.length + data.length;
+    });
+
+    var cenSize = central.reduce(function(s,c){ return s+c.length; }, 0);
+    var end = new Uint8Array(22);
+    u32(end,0x06054b50,0); u16(end,0,4); u16(end,0,6);
+    u16(end,files.length,8); u16(end,files.length,10);
+    u32(end,cenSize,12); u32(end,offset,16); u16(end,0,20);
+
+    var all = chunks.concat(central); all.push(end);
+    var total = all.reduce(function(s,c){ return s+c.length; }, 0);
+    var out = new Uint8Array(total), p = 0;
+    all.forEach(function(c){ out.set(c,p); p += c.length; });
+    return out;
+  }
+
+  /* ====================== OOXML ====================== */
+  var EMU = 914400, SLIDE_W = 13.3333, SLIDE_H = 7.5;
+  function inch(v){ return Math.round(v*EMU); }
+
+  var _sid = 1;
+  function caixa(o){
+    var id = ++_sid;
+    var fill = o.fill ? '<a:solidFill><a:srgbClr val="'+o.fill+'"/></a:solidFill>' : '<a:noFill/>';
+    var ln = o.line === false ? '<a:ln><a:noFill/></a:ln>'
+           : '<a:ln w="9525"><a:solidFill><a:srgbClr val="'+(o.lineColor||'FFFFFF')+'"/></a:solidFill></a:ln>';
+    var size = Math.round((o.size||11)*100);
+    var paras = (Array.isArray(o.text) ? o.text : [o.text||'']).map(function(t){
+      if(t === '') return '<a:p><a:pPr algn="'+(o.align||'l')+'"/><a:endParaRPr lang="pt-BR" sz="'+size+'"/></a:p>';
+      return '<a:p><a:pPr algn="'+(o.align||'l')+'"/><a:r><a:rPr lang="pt-BR" sz="'+size+'" b="'+(o.bold?'1':'0')+'" dirty="0">'
+           + '<a:solidFill><a:srgbClr val="'+(o.color||PRETO)+'"/></a:solidFill>'
+           + '<a:latin typeface="Arial"/><a:cs typeface="Arial"/></a:rPr>'
+           + '<a:t>'+xesc(t)+'</a:t></a:r></a:p>';
+    }).join('');
+    return '<p:sp><p:nvSpPr><p:cNvPr id="'+id+'" name="cx'+id+'"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>'
+      + '<p:spPr><a:xfrm><a:off x="'+inch(o.x)+'" y="'+inch(o.y)+'"/><a:ext cx="'+inch(o.w)+'" cy="'+inch(o.h)+'"/></a:xfrm>'
+      + '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' + fill + ln + '</p:spPr>'
+      + '<p:txBody><a:bodyPr wrap="square" lIns="'+(o.padL==null?63500:o.padL)+'" tIns="27432" rIns="63500" '
+      + 'bIns="27432" anchor="'+(o.anchor||'ctr')+'"><a:normAutofit/></a:bodyPr><a:lstStyle/>'
+      + paras + '</p:txBody></p:sp>';
+  }
+  function figura(o){
+    var id = ++_sid;
+    return '<p:pic><p:nvPicPr><p:cNvPr id="'+id+'" name="img'+id+'"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>'
+      + '<p:blipFill><a:blip r:embed="'+o.rid+'"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>'
+      + '<p:spPr><a:xfrm><a:off x="'+inch(o.x)+'" y="'+inch(o.y)+'"/><a:ext cx="'+inch(o.w)+'" cy="'+inch(o.h)+'"/></a:xfrm>'
+      + '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+      + '<a:ln w="9525"><a:solidFill><a:srgbClr val="BFBFBF"/></a:solidFill></a:ln></p:spPr></p:pic>';
+  }
+
+  var XMLDECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n';
+  var NS = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+         + 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+         + 'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
+  var REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/';
+  var CLRMAP = '<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" '
+    + 'accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>';
+
+  var CONTENT_TYPES = XMLDECL + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    + '<Default Extension="xml" ContentType="application/xml"/>'
+    + '<Default Extension="jpeg" ContentType="image/jpeg"/>'
+    + '<Default Extension="png" ContentType="image/png"/>'
+    + '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>'
+    + '<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>'
+    + '<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>'
+    + '<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>'
+    + '<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>'
+    + '</Types>';
+
+  var ROOTRELS = XMLDECL + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="'+REL+'officeDocument" Target="ppt/presentation.xml"/></Relationships>';
+
+  var PRESENTATION = XMLDECL + '<p:presentation '+NS+' saveSubsetFonts="1">'
+    + '<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>'
+    + '<p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst>'
+    + '<p:sldSz cx="12192000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>';
+
+  var PRESRELS = XMLDECL + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="'+REL+'slideMaster" Target="slideMasters/slideMaster1.xml"/>'
+    + '<Relationship Id="rId2" Type="'+REL+'slide" Target="slides/slide1.xml"/>'
+    + '<Relationship Id="rId3" Type="'+REL+'theme" Target="theme/theme1.xml"/></Relationships>';
+
+  function spTreeVazia(){
+    return '<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
+      + '<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>'
+      + '<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree></p:cSld>';
+  }
+  var SLIDEMASTER = XMLDECL + '<p:sldMaster '+NS+'>' + spTreeVazia() + CLRMAP
+    + '<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst></p:sldMaster>';
+  var MASTERRELS = XMLDECL + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="'+REL+'slideLayout" Target="../slideLayouts/slideLayout1.xml"/>'
+    + '<Relationship Id="rId2" Type="'+REL+'theme" Target="../theme/theme1.xml"/></Relationships>';
+  var SLIDELAYOUT = XMLDECL + '<p:sldLayout '+NS+' type="blank" preserve="1">' + spTreeVazia() + '</p:sldLayout>';
+  var LAYOUTRELS = XMLDECL + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="'+REL+'slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>';
+
+  var THEME = (function(){
+    var solid = '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>';
+    var linha = '<a:ln w="9525" cap="flat" cmpd="sng" algn="ctr">'+solid+'<a:prstDash val="solid"/></a:ln>';
+    var efeito = '<a:effectStyle><a:effectLst/></a:effectStyle>';
+    return XMLDECL + '<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Ocorrencias">'
+      + '<a:themeElements><a:clrScheme name="Ocorrencias">'
+      + '<a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>'
+      + '<a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>'
+      + '<a:dk2><a:srgbClr val="'+AZUL+'"/></a:dk2><a:lt2><a:srgbClr val="'+CINZA+'"/></a:lt2>'
+      + '<a:accent1><a:srgbClr val="'+AZUL+'"/></a:accent1><a:accent2><a:srgbClr val="1B6AC9"/></a:accent2>'
+      + '<a:accent3><a:srgbClr val="7F7F7F"/></a:accent3><a:accent4><a:srgbClr val="BFBFBF"/></a:accent4>'
+      + '<a:accent5><a:srgbClr val="'+CINZA+'"/></a:accent5><a:accent6><a:srgbClr val="FF0000"/></a:accent6>'
+      + '<a:hlink><a:srgbClr val="0563C1"/></a:hlink><a:folHlink><a:srgbClr val="954F72"/></a:folHlink>'
+      + '</a:clrScheme><a:fontScheme name="Arial">'
+      + '<a:majorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont>'
+      + '<a:minorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont>'
+      + '</a:fontScheme><a:fmtScheme name="Ocorrencias">'
+      + '<a:fillStyleLst>'+solid+solid+solid+'</a:fillStyleLst>'
+      + '<a:lnStyleLst>'+linha+linha+linha+'</a:lnStyleLst>'
+      + '<a:effectStyleLst>'+efeito+efeito+efeito+'</a:effectStyleLst>'
+      + '<a:bgFillStyleLst>'+solid+solid+solid+'</a:bgFillStyleLst>'
+      + '</a:fmtScheme></a:themeElements><a:objectDefaults/><a:extraClrSchemeLst/></a:theme>';
+  })();
+
+  function montarSlide(d, imgs){
+    _sid = 1;
+    var s = [], M = 0.25, W = SLIDE_W - 2*M, LBL = 2.15;
+
+    s.push(caixa({x:M, y:0.06, w:5, h:0.32, text:'LOGÍSTICA', bold:true, size:15, line:false, padL:0}));
+    s.push(caixa({x:SLIDE_W-M-5, y:0.06, w:5, h:0.32, text:'P.U.SÃO CARLOS', bold:true, size:15, align:'r', line:false}));
+
+    s.push(caixa({x:M, y:0.44, w:W, h:0.44, fill:AZUL, line:false}));
+    s.push(caixa({x:M+0.12, y:0.44, w:6, h:0.44, text:'STATUS – OCORRÊNCIAS', bold:true, size:17, color:BRANCO, line:false, padL:0}));
+    s.push(caixa({x:SLIDE_W-M-3.4, y:0.46, w:3.3, h:0.20, text:'SÃO CARLOS', bold:true, size:8, color:BRANCO, align:'r', line:false}));
+    s.push(caixa({x:SLIDE_W-M-3.4, y:0.66, w:3.3, h:0.20, text:d.dataOcorrencia, bold:true, size:8, color:BRANCO, align:'r', line:false}));
+
+    var y = 0.96;
+    [['FALHA / RECLAMAÇÃO:', d.falha, 0.46],
+     ['RELATO DA OCORRÊNCIA:', d.relato, 0.68],
+     ['AÇÕES:', d.acoes, 0.46]].forEach(function(l){
+      s.push(caixa({x:M, y:y, w:LBL, h:l[2], text:l[0], bold:true, size:10, color:BRANCO, fill:AZUL}));
+      s.push(caixa({x:M+LBL, y:y, w:W-LBL, h:l[2], text:l[1], bold:true, size:10.5, fill:CINZA}));
+      y += l[2];
+    });
+
+    y += 0.14;
+    s.push(caixa({x:M, y:y, w:W, h:0.40, text:'DADOS DA OCORRÊNCIA', bold:true, size:14, color:BRANCO, fill:AZUL}));
+    y += 0.40;
+
+    var c1 = LBL, c2 = 4.05, c3 = 2.45, c4 = W - c1 - c2 - c3;
+    [['RESPONSÁVEL PELA ÁREA:', d.responsavel, 'N.º DA OT / HU:', d.otHu],
+     ['MATERIAL / CÓDIGO:', d.material, 'TURNO:', d.turno],
+     ['PONTO DE DETECÇÃO:', d.ponto, 'DATA / HORA DA OCORRÊNCIA:', d.dataHora],
+     ['AÇÃO IMEDIATA:', d.acaoImediata, 'POSTO DE MONTAGEM:', d.posto]].forEach(function(g){
+      var h = 0.44;
+      s.push(caixa({x:M,          y:y, w:c1, h:h, text:g[0], bold:true, size:9.5,  color:BRANCO, fill:AZUL}));
+      s.push(caixa({x:M+c1,       y:y, w:c2, h:h, text:g[1], bold:true, size:10.5, fill:BRANCO, lineColor:'BFBFBF'}));
+      s.push(caixa({x:M+c1+c2,    y:y, w:c3, h:h, text:g[2], bold:true, size:9.5,  color:BRANCO, fill:AZUL}));
+      s.push(caixa({x:M+c1+c2+c3, y:y, w:c4, h:h, text:g[3], bold:true, size:10.5, fill:BRANCO, lineColor:'BFBFBF'}));
+      y += h;
+    });
+
+    y += 0.16;
+    var alturaFotos = SLIDE_H - y - 0.42;
+    if(imgs.length){
+      var gap = 0.18, boxW = (W - gap*(imgs.length-1)) / imgs.length;
+      imgs.forEach(function(im, i){
+        var bx = M + i*(boxW+gap), areaH = alturaFotos - 0.24;
+        s.push(caixa({x:bx, y:y, w:boxW, h:0.24, text:im.titulo, bold:true, size:9, color:BRANCO, fill:AZUL, align:'ctr'}));
+        var escala = Math.min(boxW/im.w, areaH/im.h);
+        var fw = im.w*escala, fh = im.h*escala;
+        s.push(figura({rid:im.rid, x:bx+(boxW-fw)/2, y:y+0.24+(areaH-fh)/2, w:fw, h:fh}));
+      });
+    }else{
+      s.push(caixa({x:M, y:y, w:W, h:alturaFotos, text:'(sem fotos anexadas neste registro)',
+                    size:11, color:'808080', fill:'F2F2F2', align:'ctr', lineColor:'BFBFBF'}));
+    }
+
+    s.push(caixa({x:M, y:7.15, w:3, h:0.24, text:'INTERNAL', size:8, color:'808080', line:false, padL:0}));
+    s.push(caixa({x:SLIDE_W-M-6, y:7.15, w:6, h:0.24, text:d.rodape, size:8, color:'808080', align:'r', line:false}));
+
+    return XMLDECL + '<p:sld '+NS+'><p:cSld><p:spTree>'
+      + '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
+      + '<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>'
+      + '<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>'
+      + s.join('') + '</p:spTree></p:cSld>' + CLRMAP + '</p:sld>';
+  }
+
+  function gerarPptx(d, imgs){
+    imgs.forEach(function(im,i){ im.rid = 'rId'+(i+1); im.nome = 'image'+(i+1)+'.'+im.ext; });
+    var slideRels = XMLDECL + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + '<Relationship Id="rIdL" Type="'+REL+'slideLayout" Target="../slideLayouts/slideLayout1.xml"/>'
+      + imgs.map(function(im){
+          return '<Relationship Id="'+im.rid+'" Type="'+REL+'image" Target="../media/'+im.nome+'"/>';
+        }).join('') + '</Relationships>';
+
+    var files = [
+      {name:'[Content_Types].xml', data: utf8(CONTENT_TYPES)},
+      {name:'_rels/.rels', data: utf8(ROOTRELS)},
+      {name:'ppt/presentation.xml', data: utf8(PRESENTATION)},
+      {name:'ppt/_rels/presentation.xml.rels', data: utf8(PRESRELS)},
+      {name:'ppt/slideMasters/slideMaster1.xml', data: utf8(SLIDEMASTER)},
+      {name:'ppt/slideMasters/_rels/slideMaster1.xml.rels', data: utf8(MASTERRELS)},
+      {name:'ppt/slideLayouts/slideLayout1.xml', data: utf8(SLIDELAYOUT)},
+      {name:'ppt/slideLayouts/_rels/slideLayout1.xml.rels', data: utf8(LAYOUTRELS)},
+      {name:'ppt/theme/theme1.xml', data: utf8(THEME)},
+      {name:'ppt/slides/slide1.xml', data: utf8(montarSlide(d, imgs))},
+      {name:'ppt/slides/_rels/slide1.xml.rels', data: utf8(slideRels)}
+    ];
+    imgs.forEach(function(im){ files.push({name:'ppt/media/'+im.nome, data: im.bytes}); });
+    return zipStore(files);
+  }
+
+  function baixar(bytes, nome){
+    var blob = new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = nome;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+
+  /* ====================== PDF (via impressão) ====================== */
+  function gerarPdf(d, imgs, reg){
+    var largFoto = imgs.length ? Math.floor(100/imgs.length) + '%' : '100%';
+    var fotos = imgs.length
+      ? '<table class="fotos"><tr>' + imgs.map(function(im){
+          return '<td style="width:'+largFoto+'"><div class="cap">'+esc(im.titulo)+'</div>'
+               + '<div class="ph"><img src="'+im.src+'" alt="'+esc(im.titulo)+'"></div></td>';
+        }).join('') + '</tr></table>'
+      : '<div class="semfoto">(sem fotos anexadas neste registro)</div>';
+
+    function lin(rot, val, h){
+      return '<tr><th style="height:'+h+'">'+esc(rot)+'</th><td class="gray">'+esc(val)+'</td></tr>';
+    }
+    function grid(a,b,c,e){
+      return '<tr><th>'+esc(a)+'</th><td>'+esc(b)+'</td><th class="th2">'+esc(c)+'</th><td>'+esc(e)+'</td></tr>';
+    }
+
+    var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
+      + '<title>' + esc(nomeArquivo(reg,'pdf').replace(/\.pdf$/,'')) + '</title><style>'
+      + '@page{size:A4 landscape;margin:7mm}'
+      + '*{box-sizing:border-box;margin:0;padding:0}'
+      + 'body{font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+      + 'table{width:100%;border-collapse:collapse;table-layout:fixed}'
+      + 'th,td{border:1px solid #fff;padding:5px 8px;font-size:9.5pt;font-weight:bold;text-align:left;'
+      + 'vertical-align:middle;word-wrap:break-word}'
+      + 'th{background:#'+AZUL+';color:#fff;width:20%;font-size:8.5pt}'
+      + 'th.th2{width:19%}'
+      + 'td{background:#fff;border-color:#bfbfbf}'
+      + 'td.gray{background:#'+CINZA+';border-color:#fff}'
+      + 'h2{background:#'+AZUL+';color:#fff;font-size:12pt;padding:5px 8px;margin:9px 0 0}'
+      /* cabeçalho e barra montados em tabela: flexbox falha em vários motores de impressão */
+      + 'table.plain,table.plain td{border:none;background:none;padding:0}'
+      + 'table.plain td{font-size:14pt;font-weight:bold;vertical-align:bottom;padding-bottom:4px}'
+      + 'table.bar{margin-bottom:7px}'
+      + 'table.bar td{background:#'+AZUL+';color:#fff;border:none;padding:6px 10px;vertical-align:middle}'
+      + 'table.bar td.t{font-size:15pt;letter-spacing:.3px}'
+      + 'table.bar td.loc{font-size:7.5pt;text-align:right;line-height:1.45}'
+      + 'table.fotos{margin-top:9px;border-spacing:0}'
+      + 'table.fotos td{border:none;background:none;padding:0 3px;vertical-align:top}'
+      + 'table.fotos .cap{background:#'+AZUL+';color:#fff;font-size:8pt;font-weight:bold;'
+      + 'text-align:center;padding:3px}'
+      + 'table.fotos .ph{border:1px solid #bfbfbf;border-top:none;height:56mm;overflow:hidden;'
+      + 'background:#fff;text-align:center;line-height:56mm}'
+      + 'table.fotos img{max-width:100%;max-height:56mm;vertical-align:middle}'
+      + '.semfoto{margin-top:9px;border:1px solid #bfbfbf;background:#f2f2f2;color:#808080;'
+      + 'text-align:center;padding:22mm 0;font-size:10pt}'
+      + 'table.foot{margin-top:6px}'
+      + 'table.foot td{border:none;background:none;padding:0;font-size:7.5pt;font-weight:normal;color:#808080}'
+      + 'table.foot td.r{text-align:right}'
+      + '</style></head><body>'
+      + '<table class="plain"><tr><td>LOGÍSTICA</td>'
+      + '<td style="text-align:right">P.U.SÃO CARLOS</td></tr></table>'
+      + '<table class="bar"><tr><td class="t">STATUS – OCORRÊNCIAS</td>'
+      + '<td class="loc" style="width:30%">SÃO CARLOS<br>'+esc(d.dataOcorrencia)+'</td></tr></table>'
+      + '<table><colgroup><col style="width:20%"><col></colgroup>'
+      + lin('FALHA / RECLAMAÇÃO:', d.falha, '9mm')
+      + lin('RELATO DA OCORRÊNCIA:', d.relato, '13mm')
+      + lin('AÇÕES:', d.acoes, '9mm')
+      + '</table>'
+      + '<h2>DADOS DA OCORRÊNCIA</h2>'
+      + '<table><colgroup><col style="width:20%"><col style="width:31%"><col style="width:19%"><col></colgroup>'
+      + grid('RESPONSÁVEL PELA ÁREA:', d.responsavel, 'N.º DA OT / HU:', d.otHu)
+      + grid('MATERIAL / CÓDIGO:', d.material, 'TURNO:', d.turno)
+      + grid('PONTO DE DETECÇÃO:', d.ponto, 'DATA / HORA DA OCORRÊNCIA:', d.dataHora)
+      + grid('AÇÃO IMEDIATA:', d.acaoImediata, 'POSTO DE MONTAGEM:', d.posto)
+      + '</table>' + fotos
+      + '<table class="foot"><tr><td>INTERNAL</td>'
+      + '<td class="r">'+esc(d.rodape)+'</td></tr></table>'
+      + '</body></html>';
+
+    var win = window.open('', '_blank');
+    if(!win){
+      alert('O navegador bloqueou a janela de impressão. Libere os pop-ups deste site e tente de novo.');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.onload = function(){ setTimeout(function(){ win.focus(); win.print(); }, 300); };
+  }
+
+  /* ====================== Modal ====================== */
+  var modal = document.getElementById('doc-modal');
+  var elResp  = document.getElementById('doc-resp');
+  var elLider = document.getElementById('doc-lider');
+  var elPosto = document.getElementById('doc-posto');
+  var elPonto = document.getElementById('doc-ponto');
+  var elSub   = document.getElementById('doc-sub');
+  var elTag   = document.getElementById('doc-tag');
+  var pendente = null;
+
+  function fecharModal(){ modal.classList.remove('on'); pendente = null; }
+
+  document.getElementById('doc-cancel').addEventListener('click', fecharModal);
+  modal.addEventListener('click', function(e){ if(e.target === modal) fecharModal(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && modal.classList.contains('on')) fecharModal();
+  });
+
+  document.getElementById('doc-ok').addEventListener('click', function(){
+    if(!pendente) return;
+    var extra = {
+      resp:  elResp.value.trim(),
+      lider: elLider.value.trim(),
+      posto: elPosto.value.trim().toUpperCase(),
+      ponto: elPonto.value.trim().toUpperCase()
+    };
+    salvarPrefs(extra);
+    var reg = pendente.reg, tipo = pendente.tipo;
+    fecharModal();
+
+    var d = montarDados(reg, extra);
+    carregarFotos(reg).then(function(imgs){
+      if(tipo === 'pdf'){
+        gerarPdf(d, imgs, reg);
+      }else{
+        try{
+          baixar(gerarPptx(d, imgs), nomeArquivo(reg, 'pptx'));
+        }catch(err){
+          console.error('[Ocorrência] Falha ao gerar PPTX:', err);
+          alert('Não foi possível gerar o PPTX: ' + (err.message || err));
+        }
+      }
+    });
+  });
+
+  window.CMRL_gerarOcorrencia = function(reg, tipo){
+    pendente = { reg: reg, tipo: tipo };
+    var p = prefs();
+    elResp.value  = p.resp  || '';
+    elLider.value = p.lider || '';
+    elPosto.value = p.posto || '';
+    elPonto.value = p.ponto || reg.portao || '';
+    elTag.textContent = tipo === 'pdf' ? 'FOLHA DE OCORRÊNCIA · PDF' : 'FOLHA DE OCORRÊNCIA · POWERPOINT';
+    elSub.textContent = reg.codigo + ' · ' + fmtData(reg.data) + ' · ' + (reg.horario || '—');
+    modal.classList.add('on');
+    setTimeout(function(){ elResp.focus(); }, 80);
+  };
 })();
 </script>
 
