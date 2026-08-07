@@ -1105,12 +1105,13 @@
         <div class="chart-nota">Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material e mostra os 12 códigos com mais peças no período filtrado. Passe o mouse sobre a barra para ver a descrição do material.</div>
       </div>
       <div class="panel span2">
-        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Retornos por dia</h2><span class="chart-periodo"></span></div>
+        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Total de retornos por mês</h2><span class="chart-periodo"></span></div>
         <div class="chart-palette-control" data-chart-palette="dia">
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-dia"></div></div>
-          <div class="palette-row"><select id="pal-dia" aria-label="Paleta do gráfico Retornos por dia"></select><button type="button" class="palette-reset" data-chart-reset="dia">Padrão</button></div>
+          <div class="palette-row"><select id="pal-dia" aria-label="Paleta do gráfico Total de retornos por mês"></select><button type="button" class="palette-reset" data-chart-reset="dia">Padrão</button></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-dia"></canvas></div>
+        <div class="chart-nota">Total de registros de retorno agrupados por mês, respeitando os filtros aplicados.</div>
       </div>
       <div class="panel span2">
         <div class="panel-head"><span class="tag">PERÍODO DO MÊS</span><h2>Retornos por dia do mês</h2><span class="chart-periodo"></span></div>
@@ -1774,19 +1775,37 @@ function CMRL_initDashboard(){
       })
     });
 
-    /* ---- Registros por dia ---- */
-    var porDia = {};
-    registros.forEach(function(r){ if(r.data) porDia[r.data] = (porDia[r.data]||0) + 1; });
-    var diasOrdenados = Object.keys(porDia).sort();
+    /* ---- Total de retornos por mês ---- */
+    var porMes = {};
+    registros.forEach(function(r){
+      if(!r.data) return;
+      var mes = r.data.slice(0, 7);
+      if(/^\d{4}-\d{2}$/.test(mes)) porMes[mes] = (porMes[mes] || 0) + 1;
+    });
+    var mesesOrdenados = Object.keys(porMes).sort();
+    var mesesAbrev = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    function fmtMesAno(anoMes){
+      var p = anoMes.split('-');
+      var idx = parseInt(p[1], 10) - 1;
+      return (mesesAbrev[idx] || p[1]) + '/' + p[0];
+    }
     destroyChart('dia');
     charts.dia = new Chart(document.getElementById('chart-dia'), {
-      type:'line',
-      data:{ labels: diasOrdenados.map(fmtDataBR), datasets:[{
-        label:'Registros', data: diasOrdenados.map(function(d){ return porDia[d]; }),
-        borderColor: paletteColor('dia', 0), backgroundColor:hexToRgba(paletteColor('dia', 0), .16),
-        pointBackgroundColor: paletteColor('dia', 0), pointBorderColor: paletteColor('dia', 0), fill:true, tension:.3, pointRadius:3
+      type:'bar',
+      data:{ labels: mesesOrdenados.map(fmtMesAno), datasets:[{
+        label:'Retornos', data: mesesOrdenados.map(function(m){ return porMes[m]; }),
+        backgroundColor: paletteColor('dia', 0), borderColor: paletteColor('dia', 0),
+        borderWidth:1, borderRadius:6, maxBarThickness:72
       }]},
-      options: baseOpts({ plugins:{ legend:{display:false} } })
+      options: baseOpts({
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{
+          label:function(ctx){ return 'Total de retornos: ' + ctx.parsed.y; }
+        } } },
+        scales:{
+          x:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{display:false} },
+          y:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}, precision:0}, grid:{color:gridColor()}, beginAtZero:true }
+        }
+      })
     });
 
     /* ---- Retornos por dia do mês (1–31) ---- */
