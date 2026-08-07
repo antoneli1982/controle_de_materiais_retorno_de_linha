@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="cmrl-data-version" content="v4-planilha-atual-2026-08-07">
+<meta name="cmrl-data-version" content="v4.1-planilha-atual-2026-08-07">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b0d10">
@@ -2845,7 +2845,7 @@ function CMRL_initRegistros(){
     appId: "1:231845500854:web:a49b5a4453d0c00dde1317"
   };
 
-  var SYNC_VERSION = 'cmrl-sync-v6-planilha-atual';
+  var SYNC_VERSION = 'cmrl-sync-v6.1-planilha-atual';
   var MAT_KEY = 'cmrl-materiais', MAT_VER_KEY = 'cmrl-materiais-ver', MAT_VERSION = 'v2-pontuado';
   var REG_KEY = 'cmrl-registros', REG_VER_KEY = 'cmrl-registros-ver', REG_VERSION = 'v4-planilha-atual';
 
@@ -2955,16 +2955,21 @@ function CMRL_initRegistros(){
       );
     }
 
-    try{
-      CMRL_initCadastro();
-      CMRL_initDashboard();
-      CMRL_initRegistros();
-    }catch(e){
-      console.error('[CMRL] Erro ao iniciar interface:', e);
-      setStatus('🔴 Erro ao abrir a ferramenta', 'err', 'Abra o console do navegador para ver o erro técnico.');
-    }finally{
-      bootstrapping = false;
+    var initErrors = [];
+    function initModule(label, fn){
+      try{ fn(); }
+      catch(e){
+        initErrors.push(label);
+        console.error('[CMRL] Erro ao iniciar '+label+':', e);
+      }
     }
+    initModule('cadastro de materiais', CMRL_initCadastro);
+    initModule('dashboard', CMRL_initDashboard);
+    initModule('registros', CMRL_initRegistros);
+    if(initErrors.length){
+      setStatus('🟠 Ferramenta aberta com alerta', 'warn', 'Falha ao iniciar: '+initErrors.join(', ')+'. Os demais módulos continuam disponíveis.');
+    }
+    bootstrapping = false;
   }
 
   function markLocalChange(type, list){
