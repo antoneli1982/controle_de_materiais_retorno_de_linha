@@ -1108,7 +1108,16 @@
           <div class="palette-row"><select id="pal-codigo" aria-label="Paleta do gráfico Peças por código de material"></select><button type="button" class="palette-reset" data-chart-reset="codigo">Padrão</button></div>
         </div>
         <div class="chart-wrap tall"><canvas id="chart-codigo"></canvas></div>
-        <div class="chart-nota">Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material e mostra os 12 códigos com mais peças no período filtrado. Passe o mouse sobre a barra para ver a descrição do material.</div>
+        <div class="chart-nota">Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material e mostra os 12 códigos com mais peças no período filtrado. Materiais lançados por peso (Kg) não entram aqui — veja o gráfico de peso ao lado. Passe o mouse sobre a barra para ver a descrição do material.</div>
+      </div>
+      <div class="panel span2" id="painel-peso" style="display:none">
+        <div class="panel-head"><span class="tag">PESO</span><h2>Peso retornado (Kg) por código de material</h2><span class="chart-periodo"></span></div>
+        <div class="chart-palette-control" data-chart-palette="peso">
+          <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-peso"></div></div>
+          <div class="palette-row"><select id="pal-peso" aria-label="Paleta do gráfico Peso por código de material"></select><button type="button" class="palette-reset" data-chart-reset="peso">Padrão</button></div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="chart-peso"></canvas></div>
+        <div class="chart-nota">Materiais lançados <b>em Kg</b> (peso, não peça — ex.: parafusos e fragmentos pesados em vez de contados). Não entram na soma de "peças retornadas" nem no gráfico de peças ao lado. Só aparece quando há retornos por peso no período filtrado.</div>
       </div>
       <div class="panel span2">
         <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Total de retornos por mês</h2><span class="chart-periodo"></span></div>
@@ -1463,7 +1472,7 @@ function CMRL_initDashboard(){
     qualidade:{nome:'Qualidade IA', cores:['#3fb950','#f0953f','#f0533f']}
   };
   var CHART_PALETTE_DEFAULT = {
-    codigo:'azul', dia:'azul', diames:'critico', turno:'turnos', caixa:'embalagem', huot:'etiquetas', confianca:'qualidade'
+    codigo:'azul', peso:'laranja', dia:'azul', diames:'critico', turno:'turnos', caixa:'embalagem', huot:'etiquetas', confianca:'qualidade'
   };
   function cloneChartPaletteDefault(){ return Object.assign({}, CHART_PALETTE_DEFAULT); }
   function loadChartPalettes(){
@@ -1799,7 +1808,7 @@ function CMRL_initDashboard(){
       var cod = (r.codigo || '').toString().trim() || '(sem código)';
       porCodigo[cod] = (porCodigo[cod] || 0) + pecasDoRegistro(r);
     });
-    var codigosOrdenados = Object.keys(porCodigo).sort(function(a,b){ return porCodigo[b] - porCodigo[a]; });
+    var codigosOrdenados = Object.keys(porCodigo).filter(function(c){ return porCodigo[c] > 0; }).sort(function(a,b){ return porCodigo[b] - porCodigo[a]; });
     var codigosTop = codigosOrdenados.slice(0, 12);
     destroyChart('codigo');
     charts.codigo = new Chart(document.getElementById('chart-codigo'), {
@@ -1822,6 +1831,49 @@ function CMRL_initDashboard(){
         }
       })
     });
+
+    /* ---- Peso (Kg) por código de material ----
+       Painel separado dos códigos lançados em peças: registros com
+       unidade:'kg' somam pesoKg aqui e nunca entram no gráfico de peças
+       acima nem na soma de "peças retornadas". Painel só aparece quando
+       há pelo menos um retorno por peso no período filtrado. */
+    var porCodigoKg = {};
+    registros.forEach(function(r){
+      if(r.unidade !== 'kg') return;
+      var cod = (r.codigo || '').toString().trim() || '(sem código)';
+      porCodigoKg[cod] = (porCodigoKg[cod] || 0) + (r.pesoKg || 0);
+    });
+    var codigosKgOrdenados = Object.keys(porCodigoKg).sort(function(a,b){ return porCodigoKg[b] - porCodigoKg[a]; });
+    var painelPeso = document.getElementById('painel-peso');
+    if(codigosKgOrdenados.length){
+      painelPeso.style.display = '';
+      var codigosKgTop = codigosKgOrdenados.slice(0, 12);
+      destroyChart('peso');
+      charts.peso = new Chart(document.getElementById('chart-peso'), {
+        type:'bar',
+        data:{ labels: codigosKgTop, datasets:[{
+          label:'Kg', data: codigosKgTop.map(function(c){ return porCodigoKg[c]; }),
+          backgroundColor: paletteColor('peso', 0), borderRadius:5, maxBarThickness:26
+        }]},
+        options: baseOpts({
+          indexAxis:'y',
+          plugins:{ legend:{display:false}, tooltip:{ callbacks:{
+            label: function(ctx){ return ctx.parsed.x.toLocaleString('pt-BR')+' kg'; },
+            afterLabel: function(ctx){
+              var d = (window.CMRL && typeof window.CMRL.lookup === 'function') ? window.CMRL.lookup(ctx.label) : null;
+              return (d && d !== ctx.label) ? [d] : [];
+            }
+          } } },
+          scales:{
+            x:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{color:gridColor()}, beginAtZero:true },
+            y:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{display:false} }
+          }
+        })
+      });
+    }else{
+      painelPeso.style.display = 'none';
+      destroyChart('peso');
+    }
 
     /* ---- Total de retornos por mês ----
        Agrupado pelo dia-turno (6h-6h), não pela data de calendário crua:
@@ -3413,7 +3465,7 @@ function baixarXlsx(wb, nomeArquivo){
 <script>
 /* Exportar cada gráfico do Dashboard como JPEG */
 (function(){
-  var CHART_IDS = ['chart-codigo','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
+  var CHART_IDS = ['chart-codigo','chart-peso','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
   var BG = '#061626';
 
   function slug(s){
@@ -3504,7 +3556,7 @@ function baixarXlsx(wb, nomeArquivo){
 <script>
 /* Imprimir todos os gráficos do Dashboard, um por folha */
 (function(){
-  var CHART_IDS = ['chart-codigo','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
+  var CHART_IDS = ['chart-codigo','chart-peso','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
   var BG = '#061626';
 
   function composeChartImage(canvas){
