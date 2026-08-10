@@ -1125,8 +1125,8 @@
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-codigo"></div></div>
           <div class="palette-row"><select id="pal-codigo" aria-label="Paleta do gráfico Peças por código de material"></select><button type="button" class="palette-reset" data-chart-reset="codigo">Padrão</button></div>
         </div>
-        <div class="chart-wrap tall"><canvas id="chart-codigo"></canvas></div>
-        <div class="chart-nota"><b id="total-pecas-codigo">Total do período: —</b><br>Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material e mostra os 12 códigos com mais peças no período filtrado. O total acima considera <b>todos os códigos</b>, inclusive os que não aparecem no ranking. Materiais lançados por peso (Kg) não entram nesta soma — veja o gráfico de peso. Passe o mouse sobre a barra para ver a descrição do material.</div>
+        <div class="chart-wrap tall" id="wrap-chart-codigo"><canvas id="chart-codigo"></canvas></div>
+        <div class="chart-nota"><b id="total-pecas-codigo">Total do período: —</b><br>Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material e exibe <b>todos os códigos com peças</b> no período filtrado. Assim, a soma das barras confere exatamente com o total acima. Materiais lançados por peso (Kg) não entram nesta soma — veja o gráfico de peso. Passe o mouse sobre a barra para ver a descrição do material.</div>
       </div>
       <div class="panel span2" id="painel-peso" style="display:none">
         <div class="panel-head"><span class="tag">PESO</span><h2>Peso retornado (Kg) por código de material</h2><span class="chart-periodo"></span></div>
@@ -1134,8 +1134,8 @@
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-peso"></div></div>
           <div class="palette-row"><select id="pal-peso" aria-label="Paleta do gráfico Peso por código de material"></select><button type="button" class="palette-reset" data-chart-reset="peso">Padrão</button></div>
         </div>
-        <div class="chart-wrap tall"><canvas id="chart-peso"></canvas></div>
-        <div class="chart-nota"><b id="total-peso-codigo">Total do período: —</b><br>Materiais lançados <b>em Kg</b> (peso, não peça — ex.: parafusos e fragmentos pesados em vez de contados). Não entram na soma de "peças retornadas" nem no gráfico de peças. Só aparece quando há retornos por peso no período filtrado.</div>
+        <div class="chart-wrap tall" id="wrap-chart-peso"><canvas id="chart-peso"></canvas></div>
+        <div class="chart-nota"><b id="total-peso-codigo">Total do período: —</b><br>Exibe <b>todos os códigos lançados em Kg</b> no período filtrado, de modo que a soma das barras confira exatamente com o total acima. Peso não entra na soma de "peças retornadas" nem no gráfico de peças.</div>
       </div>
       <div class="panel span2">
         <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Volume retornado por mês — peças e Kg</h2><span class="chart-periodo"></span></div>
@@ -1836,12 +1836,16 @@ function CMRL_initDashboard(){
       porCodigo[cod] = (porCodigo[cod] || 0) + pecasDoRegistro(r);
     });
     var codigosOrdenados = Object.keys(porCodigo).filter(function(c){ return porCodigo[c] > 0; }).sort(function(a,b){ return porCodigo[b] - porCodigo[a]; });
-    var codigosTop = codigosOrdenados.slice(0, 12);
+    var codigosExibidos = codigosOrdenados;
+    var wrapCodigo = document.getElementById('wrap-chart-codigo');
+    if(wrapCodigo){
+      wrapCodigo.style.height = Math.max(340, 58 + codigosExibidos.length * 29) + 'px';
+    }
     destroyChart('codigo');
     charts.codigo = new Chart(document.getElementById('chart-codigo'), {
       type:'bar',
-      data:{ labels: codigosTop, datasets:[{
-        label:'Peças', data: codigosTop.map(function(c){ return porCodigo[c]; }),
+      data:{ labels: codigosExibidos, datasets:[{
+        label:'Peças', data: codigosExibidos.map(function(c){ return porCodigo[c]; }),
         backgroundColor: paletteColor('codigo', 0), borderRadius:5, maxBarThickness:26
       }]},
       options: baseOpts({
@@ -1874,12 +1878,16 @@ function CMRL_initDashboard(){
     var painelPeso = document.getElementById('painel-peso');
     if(codigosKgOrdenados.length){
       painelPeso.style.display = '';
-      var codigosKgTop = codigosKgOrdenados.slice(0, 12);
+      var codigosKgExibidos = codigosKgOrdenados;
+      var wrapPeso = document.getElementById('wrap-chart-peso');
+      if(wrapPeso){
+        wrapPeso.style.height = Math.max(260, 58 + codigosKgExibidos.length * 29) + 'px';
+      }
       destroyChart('peso');
       charts.peso = new Chart(document.getElementById('chart-peso'), {
         type:'bar',
-        data:{ labels: codigosKgTop, datasets:[{
-          label:'Kg', data: codigosKgTop.map(function(c){ return porCodigoKg[c]; }),
+        data:{ labels: codigosKgExibidos, datasets:[{
+          label:'Kg', data: codigosKgExibidos.map(function(c){ return porCodigoKg[c]; }),
           backgroundColor: paletteColor('peso', 0), borderRadius:5, maxBarThickness:26
         }]},
         options: baseOpts({
