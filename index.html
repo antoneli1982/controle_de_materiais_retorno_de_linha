@@ -1126,7 +1126,7 @@
           <div class="palette-row"><select id="pal-codigo" aria-label="Paleta do gráfico Peças por código de material"></select><button type="button" class="palette-reset" data-chart-reset="codigo">Padrão</button></div>
         </div>
         <div class="chart-wrap tall"><canvas id="chart-codigo"></canvas></div>
-        <div class="chart-nota">Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material e mostra os 12 códigos com mais peças no período filtrado. Materiais lançados por peso (Kg) não entram aqui — veja o gráfico de peso ao lado. Passe o mouse sobre a barra para ver a descrição do material.</div>
+        <div class="chart-nota"><b id="total-pecas-codigo">Total do período: —</b><br>Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material e mostra os 12 códigos com mais peças no período filtrado. O total acima considera <b>todos os códigos</b>, inclusive os que não aparecem no ranking. Materiais lançados por peso (Kg) não entram nesta soma — veja o gráfico de peso. Passe o mouse sobre a barra para ver a descrição do material.</div>
       </div>
       <div class="panel span2" id="painel-peso" style="display:none">
         <div class="panel-head"><span class="tag">PESO</span><h2>Peso retornado (Kg) por código de material</h2><span class="chart-periodo"></span></div>
@@ -1135,16 +1135,16 @@
           <div class="palette-row"><select id="pal-peso" aria-label="Paleta do gráfico Peso por código de material"></select><button type="button" class="palette-reset" data-chart-reset="peso">Padrão</button></div>
         </div>
         <div class="chart-wrap tall"><canvas id="chart-peso"></canvas></div>
-        <div class="chart-nota">Materiais lançados <b>em Kg</b> (peso, não peça — ex.: parafusos e fragmentos pesados em vez de contados). Não entram na soma de "peças retornadas" nem no gráfico de peças ao lado. Só aparece quando há retornos por peso no período filtrado.</div>
+        <div class="chart-nota"><b id="total-peso-codigo">Total do período: —</b><br>Materiais lançados <b>em Kg</b> (peso, não peça — ex.: parafusos e fragmentos pesados em vez de contados). Não entram na soma de "peças retornadas" nem no gráfico de peças. Só aparece quando há retornos por peso no período filtrado.</div>
       </div>
       <div class="panel span2">
-        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Total de retornos por mês</h2><span class="chart-periodo"></span></div>
+        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Volume retornado por mês — peças e Kg</h2><span class="chart-periodo"></span></div>
         <div class="chart-palette-control" data-chart-palette="dia">
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-dia"></div></div>
-          <div class="palette-row"><select id="pal-dia" aria-label="Paleta do gráfico Total de retornos por mês"></select><button type="button" class="palette-reset" data-chart-reset="dia">Padrão</button></div>
+          <div class="palette-row"><select id="pal-dia" aria-label="Paleta do gráfico Volume retornado por mês"></select><button type="button" class="palette-reset" data-chart-reset="dia">Padrão</button></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-dia"></canvas></div>
-        <div class="chart-nota">Total de registros de retorno agrupados por mês, respeitando os filtros aplicados.</div>
+        <div class="chart-nota">Soma as <b>quantidades de peças</b> e os <b>pesos em Kg</b> por mês-calendário, em eixos separados. Assim, o total mensal de cada unidade confere exatamente com os KPIs e com os totais por material. A quantidade de lançamentos permanece no KPI “Total de retornos”.</div>
       </div>
       <div class="panel span2">
         <div class="panel-head"><span class="tag">PERÍODO DO MÊS</span><h2>Retornos por dia do mês</h2><span class="chart-periodo"></span></div>
@@ -1811,6 +1811,15 @@ function CMRL_initDashboard(){
       '<div class="kpi'+(tercoTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(tercoTop?tercoTop+' ('+tercoTopPct+'%)':'—')+'</div><div class="k">Concentração no mês</div></div>' +
       '<div class="kpi"><div class="v" style="font-size:14px">'+periodo+'</div><div class="k">Período coberto</div></div>';
 
+    var totalPecasCodigoEl = document.getElementById('total-pecas-codigo');
+    if(totalPecasCodigoEl){
+      totalPecasCodigoEl.textContent = 'Total do período (todos os códigos): ' + totalQtd.toLocaleString('pt-BR') + ' peças';
+    }
+    var totalPesoCodigoEl = document.getElementById('total-peso-codigo');
+    if(totalPesoCodigoEl){
+      totalPesoCodigoEl.textContent = 'Total do período (todos os códigos): ' + totalKg.toLocaleString('pt-BR', {maximumFractionDigits:3}) + ' kg';
+    }
+
     var alertEl = document.getElementById('dash-alert');
     if(!chartsOk){
       alertEl.style.display = 'block';
@@ -1893,46 +1902,80 @@ function CMRL_initDashboard(){
       destroyChart('peso');
     }
 
-    /* ---- Total de retornos por mês ----
-       Agrupado pelo dia-turno (6h-6h), não pela data de calendário crua:
-       um retorno lançado às 02h com data "01" pertence ao dia-turno do dia
-       anterior. Isso evita que a virada do mês jogue retornos da madrugada
-       para o mês seguinte ao que realmente aconteceram. */
-    var porMes = {};
+    /* ---- Volume retornado por mês ----
+       O filtro de datas trabalha com mês-calendário. Por isso, o agrupamento
+       mensal usa exatamente r.data e não desloca lançamentos da madrugada
+       para o mês anterior. Peças e Kg ficam em séries/eixos separados: são
+       unidades diferentes e nunca devem ser somadas em um único total. */
+    var porMesPecas = {};
+    var porMesKg = {};
     registros.forEach(function(r){
       if(!r.data) return;
-      var mes = diaTurno(r.data, r.horario).slice(0, 7);
-      if(/^\d{4}-\d{2}$/.test(mes)) porMes[mes] = (porMes[mes] || 0) + 1;
+      var mes = r.data.slice(0, 7);
+      if(!/^\d{4}-\d{2}$/.test(mes)) return;
+      if(porMesPecas[mes] === undefined) porMesPecas[mes] = 0;
+      if(porMesKg[mes] === undefined) porMesKg[mes] = 0;
+      porMesPecas[mes] += pecasDoRegistro(r);
+      if(r.unidade === 'kg') porMesKg[mes] += (r.pesoKg || 0);
     });
-    var mesesOrdenados = Object.keys(porMes).sort();
+    var mesesOrdenados = Object.keys(porMesPecas).sort();
     var mesesAbrev = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
     function fmtMesAno(anoMes){
       var p = anoMes.split('-');
       var idx = parseInt(p[1], 10) - 1;
       return (mesesAbrev[idx] || p[1]) + '/' + p[0];
     }
+    var haPesoMensal = mesesOrdenados.some(function(m){ return porMesKg[m] > 0; });
+    var datasetsMensais = [{
+      label:'Peças (un)',
+      data: mesesOrdenados.map(function(m){ return porMesPecas[m]; }),
+      backgroundColor: paletteColor('dia', 0), borderColor: paletteColor('dia', 0),
+      borderWidth:1, borderRadius:6, maxBarThickness:58, yAxisID:'yPecas'
+    }];
+    if(haPesoMensal){
+      datasetsMensais.push({
+        label:'Peso (Kg)',
+        data: mesesOrdenados.map(function(m){ return porMesKg[m]; }),
+        backgroundColor: paletteColor('dia', 1), borderColor: paletteColor('dia', 1),
+        borderWidth:1, borderRadius:6, maxBarThickness:58, yAxisID:'yKg'
+      });
+    }
     destroyChart('dia');
     charts.dia = new Chart(document.getElementById('chart-dia'), {
       type:'bar',
-      data:{ labels: mesesOrdenados.map(fmtMesAno), datasets:[{
-        label:'Retornos', data: mesesOrdenados.map(function(m){ return porMes[m]; }),
-        backgroundColor: paletteColor('dia', 0), borderColor: paletteColor('dia', 0),
-        borderWidth:1, borderRadius:6, maxBarThickness:72
-      }]},
+      data:{ labels: mesesOrdenados.map(fmtMesAno), datasets:datasetsMensais },
       options: baseOpts({
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{
-          label:function(ctx){ return 'Total de retornos: ' + ctx.parsed.y; }
+        plugins:{
+          legend:{display:true, labels:{color:textColor(), font:{family:'Poppins', size:11}}},
+          tooltip:{ callbacks:{
+          label:function(ctx){
+            var valor = ctx.parsed.y == null ? 0 : ctx.parsed.y;
+            return ctx.dataset.yAxisID === 'yKg'
+              ? 'Peso: ' + valor.toLocaleString('pt-BR', {maximumFractionDigits:3}) + ' kg'
+              : 'Peças: ' + valor.toLocaleString('pt-BR');
+          }
         } } },
         scales:{
           x:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{display:false} },
-          y:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}, precision:0}, grid:{color:gridColor()}, beginAtZero:true }
+          yPecas:{
+            type:'linear', position:'left', beginAtZero:true,
+            title:{display:true, text:'Peças (un)', color:textColor()},
+            ticks:{color:textColor(), font:{family:'Poppins', size:10}, precision:0},
+            grid:{color:gridColor()}
+          },
+          yKg:{
+            type:'linear', position:'right', beginAtZero:true, display:haPesoMensal,
+            title:{display:haPesoMensal, text:'Peso (Kg)', color:textColor()},
+            ticks:{color:textColor(), font:{family:'Poppins', size:10}},
+            grid:{drawOnChartArea:false}
+          }
         }
       })
     });
 
     /* ---- Retornos por dia do mês (1–31) ---- */
     var porDiaMes = {}; for(var dm=1; dm<=31; dm++) porDiaMes[dm]=0;
-    registros.forEach(function(r){ if(r.data){ var dt=diaTurno(r.data, r.horario); var d=parseInt(dt.split('-')[2],10); if(d>=1&&d<=31) porDiaMes[d]++; } });
+    registros.forEach(function(r){ if(r.data){ var d=parseInt(r.data.split('-')[2],10); if(d>=1&&d<=31) porDiaMes[d]++; } });
     var diasMes = []; for(var dm2=1; dm2<=31; dm2++) diasMes.push(dm2);
     destroyChart('diames');
     charts.diames = new Chart(document.getElementById('chart-diames'), {
