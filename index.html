@@ -297,8 +297,9 @@
   .materiais-contagem{font-family:var(--font-mono);font-size:11px;color:var(--txt-faint);white-space:nowrap}
   .materiais-chart-wrap{position:relative;padding:14px 16px;overflow-y:auto;overflow-x:hidden;flex:1 1 auto}
   .materiais-vazio{padding:20px 18px;text-align:center;color:var(--txt-faint);font-size:12.5px}
-  .materiais-acoes{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line-soft);flex-shrink:0}
+  .materiais-acoes{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px 4px;border-top:1px solid var(--line-soft);flex-shrink:0}
   .materiais-acoes .doc-btn{flex:1 1 150px}
+  .materiais-nota{padding:2px 18px 14px;font-size:10.5px;line-height:1.4;color:var(--txt-faint);flex-shrink:0}
 
   .submit{width:100%;cursor:pointer;background:var(--blue);color:#fff;border:1px solid var(--blue-soft);border-radius:3px;
     padding:13px;font-family:var(--font-head);font-size:12.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
@@ -1190,7 +1191,7 @@
           <div class="palette-row"><select id="pal-huot" aria-label="Paleta do gráfico Etiquetas encontradas"></select><button type="button" class="palette-reset" data-chart-reset="huot">Padrão</button></div>
         </div>
         <div class="chart-wrap small"><canvas id="chart-huot"></canvas></div>
-        <div class="chart-nota">Quantidade de <b>ocorrências</b> (não de peças) em que cada etiqueta (HU, OT, SEQ) foi encontrada.</div>
+        <div class="chart-nota">Quantidade de <b>ocorrências</b> (não de peças) por etiqueta (HU, OT, SEQ): <b>Encontrada</b> é quando a etiqueta foi lida/marcada; <b>Em branco</b> é quando o campo ficou indefinido (comum em registros importados que a IA não conseguiu ler). Quem foi marcado manualmente como "não encontrada" não entra em nenhuma das duas barras.</div>
       </div>
     </div>
 
@@ -1223,6 +1224,7 @@
         <button type="button" class="doc-btn" id="materiais-imprimir">🖶 Imprimir</button>
         <button type="button" class="doc-btn primary" id="materiais-jpeg">⬇ Baixar JPEG</button>
       </div>
+      <div class="materiais-nota">Imprimir/JPEG saem em páginas de até 30 materiais cada, em tamanho legível — não em uma imagem só espremida.</div>
     </div>
   </div>
 
@@ -1514,14 +1516,10 @@ function CMRL_initDashboard(){
     var modal = document.getElementById('materiais-modal');
     if(modal) modal.classList.remove('on');
   }
-  function renderChartMateriaisTodos(){
+  function materiaisFiltradosOrdenados(){
     var buscaEl = document.getElementById('materiais-busca');
     var ordemEl = document.getElementById('materiais-ordem');
-    var contagemEl = document.getElementById('materiais-contagem');
-    var vazioEl = document.getElementById('materiais-vazio');
-    var wrapEl = document.getElementById('materiais-chart-wrap');
-    if(!buscaEl || !ordemEl) return;
-    var termo = buscaEl.value.trim().toLowerCase();
+    var termo = buscaEl ? buscaEl.value.trim().toLowerCase() : '';
     var todos = materiaisTodosData.codigos || [];
     var valores = materiaisTodosData.valores || {};
     var lookup = (window.CMRL && typeof window.CMRL.lookup === 'function') ? window.CMRL.lookup : function(){ return null; };
@@ -1530,15 +1528,26 @@ function CMRL_initDashboard(){
       var desc = lookup(cod);
       return !!(desc && desc.toLowerCase().indexOf(termo) !== -1);
     });
-    var ordem = ordemEl.value;
+    var ordem = ordemEl ? ordemEl.value : 'desc';
     if(ordem === 'cod'){
       filtrados.sort(function(a,b){ return a.localeCompare(b, 'pt-BR'); });
     }else if(ordem === 'asc'){
       filtrados.sort(function(a,b){ return (valores[a]||0) - (valores[b]||0); });
     } // 'desc' já vem ordenado de codigosOrdenados
+    return { codigos: filtrados, valores: valores, lookup: lookup };
+  }
+  function renderChartMateriaisTodos(){
+    var contagemEl = document.getElementById('materiais-contagem');
+    var vazioEl = document.getElementById('materiais-vazio');
+    var wrapEl = document.getElementById('materiais-chart-wrap');
+    var dadosFiltro = materiaisFiltradosOrdenados();
+    var filtrados = dadosFiltro.codigos;
+    var valores = dadosFiltro.valores;
+    var lookup = dadosFiltro.lookup;
+    var totalGeral = (materiaisTodosData.codigos || []).length;
 
     if(contagemEl){
-      contagemEl.textContent = filtrados.length + ' de ' + todos.length + ' materiais';
+      contagemEl.textContent = filtrados.length + ' de ' + totalGeral + ' materiais';
     }
 
     if(!filtrados.length){
@@ -1550,7 +1559,12 @@ function CMRL_initDashboard(){
     if(vazioEl) vazioEl.style.display = 'none';
     if(wrapEl){
       wrapEl.style.display = '';
-      wrapEl.style.height = Math.min(560, Math.max(200, 40 + filtrados.length * 24)) + 'px';
+      /* Sem teto de altura: com muitos materiais, o gráfico cresce e o
+         usuário rola dentro do modal — isso evita espremer as barras a
+         ponto de os rótulos ficarem ilegíveis (era o que acontecia com o
+         limite fixo de 560px). Para imprimir/baixar em tamanho legível,
+         use os botões de imprimir/JPEG, que paginam automaticamente. */
+      wrapEl.style.height = Math.max(200, 40 + filtrados.length * 24) + 'px';
     }
 
     var labels = filtrados.map(function(cod){
@@ -1586,10 +1600,14 @@ function CMRL_initDashboard(){
     });
   }
 
-  /* ---- Baixar/imprimir o gráfico "Ver todos os materiais" (JPEG) ----
-     Mesmo visual dos botões de exportação do dashboard (fundo escuro,
-     título e subtítulo), aplicado ao gráfico do modal, que fica de fora
-     do CHART_IDS usado pelos outros scripts de exportação. */
+  /* ---- Baixar/imprimir a lista "Ver todos os materiais" (JPEG, paginado) ----
+     Com muitos materiais, um único gráfico fica ilegível (barras e rótulos
+     espremidos). Por isso o JPEG e a impressão sempre dividem a lista atual
+     (respeitando busca/ordenação) em páginas de tamanho legível, uma imagem
+     por página — cada gráfico temporário é desenhado isolado, fora da tela,
+     e descartado depois de gerar a imagem. */
+  var MATERIAIS_POR_PAGINA = 30;
+
   function slugMateriais(s){
     return (s||'materiais').toString().toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -1604,17 +1622,11 @@ function CMRL_initDashboard(){
       if(txtOrdem) partes.push(txtOrdem);
     }
     if(buscaEl && buscaEl.value.trim()) partes.push('Busca: "' + buscaEl.value.trim() + '"');
-    var contagemEl = document.getElementById('materiais-contagem');
-    if(contagemEl && contagemEl.textContent) partes.push(contagemEl.textContent);
     return partes.join(' · ');
   }
-  function composeMateriaisImage(){
-    var canvas = document.getElementById('chart-materiais-todos');
-    if(!canvas || !charts.materiaisTodos) return null;
+  function composeImagemGenerica(canvas, title, subtitle){
     var w = canvas.width, h = canvas.height;
     if(!w || !h) return null;
-    var title = 'Todos os materiais (peças)';
-    var subtitle = subtituloMateriais();
     var BG = '#061626';
     var scale = Math.max(1, w/700);
     var pad = Math.round(20*scale), tSize = Math.round(22*scale), sSize = Math.round(13*scale);
@@ -1631,24 +1643,77 @@ function CMRL_initDashboard(){
     ctx.drawImage(canvas, pad, y, w, h);
     try { return out.toDataURL('image/jpeg', 0.95); } catch(e){ return null; }
   }
+  function gerarPaginasMateriaisImagens(){
+    var dadosFiltro = materiaisFiltradosOrdenados();
+    var codigos = dadosFiltro.codigos;
+    if(!codigos.length) return [];
+    var grupos = [];
+    for(var i=0; i<codigos.length; i += MATERIAIS_POR_PAGINA){
+      grupos.push(codigos.slice(i, i + MATERIAIS_POR_PAGINA));
+    }
+    var totalPaginas = grupos.length;
+    var largura = 860;
+    var subtitle = subtituloMateriais();
+    var urls = [];
+    grupos.forEach(function(grupo, idx){
+      var labels = grupo.map(function(cod){
+        var desc = dadosFiltro.lookup(cod);
+        return desc ? cod + ' — ' + desc : cod;
+      });
+      var valoresGrupo = grupo.map(function(cod){ return dadosFiltro.valores[cod] || 0; });
+      var tempCanvas = document.createElement('canvas');
+      tempCanvas.width = largura;
+      tempCanvas.height = Math.max(160, 40 + grupo.length * 28);
+      var tempChart = new Chart(tempCanvas, {
+        type:'bar',
+        data:{ labels: labels, datasets:[{
+          label:'Peças', data: valoresGrupo,
+          backgroundColor: paletteColor('codigo', 0), borderRadius:5, maxBarThickness:22
+        }]},
+        options: {
+          indexAxis:'y', responsive:false, animation:false, devicePixelRatio:1,
+          layout:{ padding:{ top:10, right:16, bottom:6, left:6 } },
+          plugins:{ legend:{display:false} },
+          scales:{
+            x:{ ticks:{color:textColor(), font:{family:'Poppins', size:11}}, grid:{color:gridColor()}, beginAtZero:true },
+            y:{ ticks:{color:textColor(), font:{family:'Poppins', size:10.5}}, grid:{display:false} }
+          }
+        }
+      });
+      tempChart.update('none');
+      var title = 'Todos os materiais (peças) — página ' + (idx+1) + ' de ' + totalPaginas;
+      var url = composeImagemGenerica(tempCanvas, title, subtitle);
+      if(url) urls.push(url);
+      tempChart.destroy();
+    });
+    return urls;
+  }
   function baixarJpegMateriais(){
-    var url = composeMateriaisImage();
-    if(!url){ alert('Abra a lista de materiais e aguarde o gráfico aparecer antes de baixar.'); return; }
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = slugMateriais('materiais-' + (document.getElementById('materiais-ordem') ? document.getElementById('materiais-ordem').value : '')) + '.jpg';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); }, 120);
+    var urls = gerarPaginasMateriaisImagens();
+    if(!urls.length){ alert('Nenhum material para baixar com a busca/ordenação atual.'); return; }
+    var base = slugMateriais('materiais-' + (document.getElementById('materiais-ordem') ? document.getElementById('materiais-ordem').value : ''));
+    urls.forEach(function(url, idx){
+      setTimeout(function(){
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = urls.length > 1 ? (base + '-pagina-' + (idx+1) + '-de-' + urls.length + '.jpg') : (base + '.jpg');
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); }, 120);
+      }, idx * 350);
+    });
   }
   function imprimirMateriais(){
-    var url = composeMateriaisImage();
-    if(!url){ alert('Abra a lista de materiais e aguarde o gráfico aparecer antes de imprimir.'); return; }
+    var urls = gerarPaginasMateriaisImagens();
+    if(!urls.length){ alert('Nenhum material para imprimir com a busca/ordenação atual.'); return; }
     var html = '<!doctype html><html><head><meta charset="utf-8"><title>Materiais — Controle de Retorno de Linha</title>'
       + '<style>@page{size:A4;margin:12mm}html,body{margin:0;padding:0;background:#fff}'
-      + '.pg{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 24mm)}'
+      + '.pg{page-break-after:always;display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 24mm)}'
+      + '.pg:last-child{page-break-after:auto}'
       + '.pg img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}'
-      + '</style></head><body><div class="pg"><img src="'+url+'"></div></body></html>';
+      + '</style></head><body>'
+      + urls.map(function(u){ return '<div class="pg"><img src="'+u+'"></div>'; }).join('')
+      + '</body></html>';
     var ifr = document.createElement('iframe');
     ifr.setAttribute('aria-hidden','true');
     ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
@@ -2027,6 +2092,9 @@ function CMRL_initDashboard(){
     var huEnc  = registros.filter(function(r){ return r.hu===true;  }).length;
     var otEnc  = registros.filter(function(r){ return r.ot===true;  }).length;
     var seqEnc = registros.filter(function(r){ return r.seq===true; }).length;
+    var huBranco  = registros.filter(function(r){ return r.hu===null;  }).length;
+    var otBranco  = registros.filter(function(r){ return r.ot===null;  }).length;
+    var seqBranco = registros.filter(function(r){ return r.seq===null; }).length;
     var semEtiqueta = registros.filter(function(r){ return r.hu!==true && r.ot!==true && r.seq!==true; }).length;
 
     document.getElementById('dash-kpis').innerHTML =
@@ -2267,16 +2335,28 @@ function CMRL_initDashboard(){
       options: baseOpts({ scales:{} })
     });
 
-    /* ---- Etiquetas encontradas (HU / OT / SEQ) ---- */
+    /* ---- Etiquetas encontradas (HU / OT / SEQ) ----
+       Duas séries lado a lado: "Encontrada" (hu/ot/seq === true) e "Em
+       branco" (=== null, campo não preenchido/indefinido — normalmente
+       vindo de registros importados por IA que não conseguiu ler a
+       etiqueta). Não conta aqui quem foi marcado como "não encontrada"
+       (=== false), que é o padrão de quem preenche o campo manualmente. */
     destroyChart('huot');
     charts.huot = new Chart(document.getElementById('chart-huot'), {
       type:'bar',
-      data:{ labels:['HU','OT','SEQ'], datasets:[{
-        label:'Etiquetas encontradas',
-        data:[huEnc, otEnc, seqEnc],
-        backgroundColor:paletteColors('huot', 3), borderRadius:5
-      }]},
-      options: baseOpts({ plugins:{ legend:{display:false} } })
+      data:{ labels:['HU','OT','SEQ'], datasets:[
+        {
+          label:'Encontrada',
+          data:[huEnc, otEnc, seqEnc],
+          backgroundColor: paletteColor('huot', 0), borderRadius:5
+        },
+        {
+          label:'Em branco',
+          data:[huBranco, otBranco, seqBranco],
+          backgroundColor: paletteColor('huot', 2), borderRadius:5
+        }
+      ]},
+      options: baseOpts({ plugins:{ legend:{display:true, labels:{color:textColor(), font:{family:'Poppins', size:11}}} } })
     });
 
     }
