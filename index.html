@@ -280,6 +280,24 @@
   .doc-btn.primary{background:var(--blue);border-color:var(--blue-soft);color:#fff}
   .doc-btn.primary:hover{background:var(--blue-soft)}
 
+  /* ---- Modal "todos os materiais" (gráfico inteligente da DEMAIS MATERIAIS) ---- */
+  #materiais-modal{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.66);
+    display:none;align-items:center;justify-content:center;padding:20px}
+  #materiais-modal.on{display:flex}
+  .materiais-card{background:var(--panel);border:1px solid var(--line);border-radius:5px;
+    width:100%;max-width:760px;max-height:88vh;display:flex;flex-direction:column;
+    box-shadow:0 18px 50px rgba(0,0,0,.45)}
+  .materiais-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+    padding:16px 18px 12px;border-bottom:1px solid var(--line-soft);flex-shrink:0}
+  .materiais-head h3{font-family:var(--font-head);font-size:15px;font-weight:600;letter-spacing:.3px;margin-top:3px}
+  .materiais-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 18px;
+    border-bottom:1px solid var(--line-soft);flex-shrink:0}
+  .materiais-toolbar input{flex:1 1 200px;width:auto}
+  .materiais-toolbar select{flex:0 1 190px;width:auto}
+  .materiais-contagem{font-family:var(--font-mono);font-size:11px;color:var(--txt-faint);white-space:nowrap}
+  .materiais-chart-wrap{position:relative;padding:14px 16px;overflow-y:auto;overflow-x:hidden;flex:1 1 auto}
+  .materiais-vazio{padding:20px 18px;text-align:center;color:var(--txt-faint);font-size:12.5px}
+
   .submit{width:100%;cursor:pointer;background:var(--blue);color:#fff;border:1px solid var(--blue-soft);border-radius:3px;
     padding:13px;font-family:var(--font-head);font-size:12.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
     transition:.13s;margin-top:4px}
@@ -442,6 +460,9 @@
   /* ---- Dashboard ---- */
   .dash-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
   .chart-nota{margin-top:10px;font-size:11px;line-height:1.45;color:var(--txt-faint)}
+  .link-btn{background:none;border:none;padding:0;margin:0;cursor:pointer;color:var(--blue-soft);
+    font-size:11px;font-family:inherit;text-decoration:underline;white-space:nowrap}
+  .link-btn:hover{color:var(--yellow)}
   .dash-relatorio-panel .rel-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
   .dash-relatorio-panel .rel-lista li{font-size:13.5px;line-height:1.5;padding-left:16px;position:relative;color:var(--txt-dim)}
   .dash-relatorio-panel .rel-lista li::before{content:"\25B8";position:absolute;left:0;color:var(--yellow)}
@@ -1126,25 +1147,16 @@
           <div class="palette-row"><select id="pal-codigo" aria-label="Paleta do gráfico Peças por código de material"></select><button type="button" class="palette-reset" data-chart-reset="codigo">Padrão</button></div>
         </div>
         <div class="chart-wrap tall" id="wrap-chart-codigo"><canvas id="chart-codigo"></canvas></div>
-        <div class="chart-nota"><b id="total-pecas-codigo">Total do período: —</b><br>Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material. Exibe os <b>12 maiores códigos</b> e reúne todos os restantes em <b>DEMAIS MATERIAIS</b>; por isso, a soma das barras confere exatamente com o total acima. Materiais lançados por peso (Kg) não entram nesta soma — veja o gráfico de peso. Passe o mouse sobre a barra para ver a descrição do material.</div>
-      </div>
-      <div class="panel span2" id="painel-peso" style="display:none">
-        <div class="panel-head"><span class="tag">PESO</span><h2>Peso retornado (Kg) por código de material</h2><span class="chart-periodo"></span></div>
-        <div class="chart-palette-control" data-chart-palette="peso">
-          <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-peso"></div></div>
-          <div class="palette-row"><select id="pal-peso" aria-label="Paleta do gráfico Peso por código de material"></select><button type="button" class="palette-reset" data-chart-reset="peso">Padrão</button></div>
-        </div>
-        <div class="chart-wrap tall" id="wrap-chart-peso"><canvas id="chart-peso"></canvas></div>
-        <div class="chart-nota"><b id="total-peso-codigo">Total do período: —</b><br>Exibe os <b>12 maiores códigos lançados em Kg</b> e reúne os restantes em <b>DEMAIS MATERIAIS</b>. A soma das barras continua conferindo exatamente com o total acima. Peso não entra na soma de "peças retornadas" nem no gráfico de peças.</div>
+        <div class="chart-nota"><b id="total-pecas-codigo">Total do período: —</b><br>Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material — materiais lançados em Kg contam como 1 unidade. Exibe os <b>12 maiores códigos</b> e reúne todos os restantes em <b>DEMAIS MATERIAIS</b>; por isso, a soma das barras confere exatamente com o total acima. Passe o mouse sobre a barra para ver a descrição do material; clique na barra <b>DEMAIS MATERIAIS</b> para ver todos os materiais ocultos.<span id="ver-todos-materiais-wrap"></span></div>
       </div>
       <div class="panel span2">
-        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Volume retornado por mês — peças e Kg</h2><span class="chart-periodo"></span></div>
+        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Volume retornado por mês</h2><span class="chart-periodo"></span></div>
         <div class="chart-palette-control" data-chart-palette="dia">
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-dia"></div></div>
           <div class="palette-row"><select id="pal-dia" aria-label="Paleta do gráfico Volume retornado por mês"></select><button type="button" class="palette-reset" data-chart-reset="dia">Padrão</button></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-dia"></canvas></div>
-        <div class="chart-nota">Soma as <b>quantidades de peças</b> e os <b>pesos em Kg</b> por mês-calendário, em eixos separados. Assim, o total mensal de cada unidade confere exatamente com os KPIs e com os totais por material. A quantidade de lançamentos permanece no KPI “Total de retornos”.</div>
+        <div class="chart-nota">Soma a <b>quantidade de peças</b> por mês-calendário (materiais lançados em Kg contam como 1 unidade). O total mensal confere com os KPIs e com os totais por material. A quantidade de lançamentos permanece no KPI “Total de retornos”.</div>
       </div>
       <div class="panel span2">
         <div class="panel-head"><span class="tag">PERÍODO DO MÊS</span><h2>Retornos por dia do mês</h2><span class="chart-periodo"></span></div>
@@ -1192,6 +1204,31 @@
     </div>
 
   </div><!-- /view-dashboard -->
+
+  <div id="materiais-modal" role="dialog" aria-modal="true" aria-label="Todos os materiais">
+    <div class="materiais-card">
+      <div class="materiais-head">
+        <div>
+          <span class="doc-tag">MATERIAIS OCULTOS</span>
+          <h3 id="materiais-titulo">Todos os materiais</h3>
+        </div>
+        <button type="button" class="icon-btn" id="materiais-fechar" aria-label="Fechar">✕</button>
+      </div>
+      <div class="materiais-toolbar">
+        <input type="text" id="materiais-busca" placeholder="Buscar por código ou descrição...">
+        <select id="materiais-ordem">
+          <option value="desc">Maior quantidade primeiro</option>
+          <option value="asc">Menor quantidade primeiro</option>
+          <option value="cod">Código (A→Z)</option>
+        </select>
+        <span class="materiais-contagem" id="materiais-contagem"></span>
+      </div>
+      <div class="materiais-chart-wrap" id="materiais-chart-wrap">
+        <canvas id="chart-materiais-todos"></canvas>
+      </div>
+      <p class="materiais-vazio" id="materiais-vazio" style="display:none">Nenhum material encontrado para essa busca.</p>
+    </div>
+  </div>
 
   <div class="view" id="view-cadastro">
     <div class="panel">
@@ -1460,9 +1497,111 @@ function CMRL_initCadastro(){
 function CMRL_initDashboard(){
   "use strict";
   var charts = {};
+  var materiaisTodosData = { codigos: [], valores: {} };
 
   function destroyChart(key){
     if(charts[key]){ charts[key].destroy(); charts[key] = null; }
+  }
+
+  /* ---- Modal "Ver todos os materiais" (gráfico inteligente da DEMAIS MATERIAIS) ---- */
+  function modalMateriaisAberto(){
+    var modal = document.getElementById('materiais-modal');
+    return !!(modal && modal.classList.contains('on'));
+  }
+  function abrirModalTodosMateriais(){
+    var modal = document.getElementById('materiais-modal');
+    if(!modal) return;
+    modal.classList.add('on');
+    renderChartMateriaisTodos();
+  }
+  function fecharModalTodosMateriais(){
+    var modal = document.getElementById('materiais-modal');
+    if(modal) modal.classList.remove('on');
+  }
+  function renderChartMateriaisTodos(){
+    var buscaEl = document.getElementById('materiais-busca');
+    var ordemEl = document.getElementById('materiais-ordem');
+    var contagemEl = document.getElementById('materiais-contagem');
+    var vazioEl = document.getElementById('materiais-vazio');
+    var wrapEl = document.getElementById('materiais-chart-wrap');
+    if(!buscaEl || !ordemEl) return;
+    var termo = buscaEl.value.trim().toLowerCase();
+    var todos = materiaisTodosData.codigos || [];
+    var valores = materiaisTodosData.valores || {};
+    var lookup = (window.CMRL && typeof window.CMRL.lookup === 'function') ? window.CMRL.lookup : function(){ return null; };
+    var filtrados = !termo ? todos.slice() : todos.filter(function(cod){
+      if(cod.toLowerCase().indexOf(termo) !== -1) return true;
+      var desc = lookup(cod);
+      return !!(desc && desc.toLowerCase().indexOf(termo) !== -1);
+    });
+    var ordem = ordemEl.value;
+    if(ordem === 'cod'){
+      filtrados.sort(function(a,b){ return a.localeCompare(b, 'pt-BR'); });
+    }else if(ordem === 'asc'){
+      filtrados.sort(function(a,b){ return (valores[a]||0) - (valores[b]||0); });
+    } // 'desc' já vem ordenado de codigosOrdenados
+
+    if(contagemEl){
+      contagemEl.textContent = filtrados.length + ' de ' + todos.length + ' materiais';
+    }
+
+    if(!filtrados.length){
+      if(vazioEl) vazioEl.style.display = 'block';
+      if(wrapEl) wrapEl.style.display = 'none';
+      destroyChart('materiaisTodos');
+      return;
+    }
+    if(vazioEl) vazioEl.style.display = 'none';
+    if(wrapEl){
+      wrapEl.style.display = '';
+      wrapEl.style.height = Math.min(560, Math.max(200, 40 + filtrados.length * 24)) + 'px';
+    }
+
+    var labels = filtrados.map(function(cod){
+      var desc = lookup(cod);
+      return desc ? cod + ' — ' + desc : cod;
+    });
+    var dados = filtrados.map(function(cod){ return valores[cod] || 0; });
+    var canvas = document.getElementById('chart-materiais-todos');
+    if(!canvas) return;
+
+    if(charts.materiaisTodos){
+      charts.materiaisTodos.data.labels = labels;
+      charts.materiaisTodos.data.datasets[0].data = dados;
+      charts.materiaisTodos.data.datasets[0].backgroundColor = paletteColor('codigo', 0);
+      charts.materiaisTodos.resize();
+      charts.materiaisTodos.update('none');
+      return;
+    }
+    charts.materiaisTodos = new Chart(canvas, {
+      type:'bar',
+      data:{ labels: labels, datasets:[{
+        label:'Peças', data: dados,
+        backgroundColor: paletteColor('codigo', 0), borderRadius:5, maxBarThickness:20
+      }]},
+      options: baseOpts({
+        indexAxis:'y',
+        plugins:{ legend:{display:false} },
+        scales:{
+          x:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{color:gridColor()}, beginAtZero:true },
+          y:{ ticks:{color:textColor(), font:{family:'Poppins', size:9}}, grid:{display:false} }
+        }
+      })
+    });
+  }
+  function initMateriaisModal(){
+    var modal = document.getElementById('materiais-modal');
+    if(!modal) return;
+    var fechar = document.getElementById('materiais-fechar');
+    if(fechar) fechar.addEventListener('click', fecharModalTodosMateriais);
+    modal.addEventListener('click', function(e){ if(e.target === modal) fecharModalTodosMateriais(); });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && modalMateriaisAberto()) fecharModalTodosMateriais();
+    });
+    var buscaEl = document.getElementById('materiais-busca');
+    if(buscaEl) buscaEl.addEventListener('input', renderChartMateriaisTodos);
+    var ordemEl = document.getElementById('materiais-ordem');
+    if(ordemEl) ordemEl.addEventListener('change', renderChartMateriaisTodos);
   }
 
   function loadRegistros(){
@@ -1490,7 +1629,7 @@ function CMRL_initDashboard(){
     qualidade:{nome:'Qualidade IA', cores:['#3fb950','#f0953f','#f0533f']}
   };
   var CHART_PALETTE_DEFAULT = {
-    codigo:'azul', peso:'laranja', dia:'azul', diames:'critico', turno:'turnos', caixa:'embalagem', huot:'etiquetas', confianca:'qualidade'
+    codigo:'azul', dia:'azul', diames:'critico', turno:'turnos', caixa:'embalagem', huot:'etiquetas', confianca:'qualidade'
   };
   function cloneChartPaletteDefault(){ return Object.assign({}, CHART_PALETTE_DEFAULT); }
   function loadChartPalettes(){
@@ -1620,15 +1759,13 @@ function CMRL_initDashboard(){
   }
 
   /* ---- Peças de um registro ----
-     Registros lançados por peso (unidade:'kg') não têm contagem de peças —
-     eles não entram na soma de "peças retornadas"/"materiais", só na soma
-     de peso (ver totalKgDoConjunto). */
+     A unidade de medida "kg" é desconsiderada nos relatórios/gráficos:
+     todo registro lançado em Kg soma como 1 unidade (peça), igual a
+     qualquer outro material, em vez de entrar por peso. */
   function pecasDoRegistro(r){
-    if(!r || r.unidade === 'kg') return 0;
+    if(!r) return 0;
+    if(r.unidade === 'kg') return 1;
     return r.qtd || 0;
-  }
-  function totalKgDoConjunto(regs){
-    return (regs||[]).reduce(function(s,r){ return s + (r.unidade === 'kg' ? (r.pesoKg || 0) : 0); }, 0);
   }
   function escHtml(s){
     return String(s == null ? '' : s)
@@ -1763,7 +1900,6 @@ function CMRL_initDashboard(){
     /* ---- KPIs ---- */
     var total = registros.length;
     var totalQtd = registros.reduce(function(s,r){ return s + pecasDoRegistro(r); }, 0);
-    var totalKg = totalKgDoConjunto(registros);
     var codigos = {}; registros.forEach(function(r){ codigos[r.codigo] = true; });
     var totalCodigos = Object.keys(codigos).length;
     var comHU = registros.filter(function(r){ return r.hu === true; }).length;
@@ -1805,7 +1941,6 @@ function CMRL_initDashboard(){
     document.getElementById('dash-kpis').innerHTML =
       '<div class="kpi"><div class="v">'+total+'</div><div class="k">Total de retornos</div></div>' +
       '<div class="kpi"><div class="v">'+totalQtd+'</div><div class="k">Peças retornadas</div></div>' +
-      (totalKg ? '<div class="kpi"><div class="v">'+totalKg.toLocaleString('pt-BR')+' kg</div><div class="k">Retornado por peso (não contado em peças)</div></div>' : '') +
       '<div class="kpi'+(turnoTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(turnoTop?turnoTop+'º ('+turnoTopPct+'%)':'—')+'</div><div class="k">Turno mais crítico</div></div>' +
       '<div class="kpi'+(caixaTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(caixaTop?caixaTopNome+' ('+caixaTopPct+'%)':'—')+'</div><div class="k">Embalagem mais crítica</div></div>' +
       '<div class="kpi'+(tercoTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(tercoTop?tercoTop+' ('+tercoTopPct+'%)':'—')+'</div><div class="k">Concentração no mês</div></div>' +
@@ -1815,11 +1950,6 @@ function CMRL_initDashboard(){
     if(totalPecasCodigoEl){
       totalPecasCodigoEl.textContent = 'Total do período (todos os códigos): ' + totalQtd.toLocaleString('pt-BR') + ' peças';
     }
-    var totalPesoCodigoEl = document.getElementById('total-peso-codigo');
-    if(totalPesoCodigoEl){
-      totalPesoCodigoEl.textContent = 'Total do período (todos os códigos): ' + totalKg.toLocaleString('pt-BR', {maximumFractionDigits:3}) + ' kg';
-    }
-
     var alertEl = document.getElementById('dash-alert');
     if(!chartsOk){
       alertEl.style.display = 'block';
@@ -1863,10 +1993,19 @@ function CMRL_initDashboard(){
       }]},
       options: baseOpts({
         indexAxis:'y',
+        onClick: function(evt, elements){
+          if(!elements || !elements.length) return;
+          var idx = elements[0].index;
+          if(codigosExibidos[idx] === 'DEMAIS MATERIAIS') abrirModalTodosMateriais();
+        },
+        onHover: function(evt, elements){
+          var sobreDemais = !!(elements && elements.length && codigosExibidos[elements[0].index] === 'DEMAIS MATERIAIS');
+          if(evt.native && evt.native.target) evt.native.target.style.cursor = sobreDemais ? 'pointer' : 'default';
+        },
         plugins:{ legend:{display:false}, tooltip:{ callbacks:{
           afterLabel: function(ctx){
             if(ctx.label === 'DEMAIS MATERIAIS'){
-              return ['Soma de ' + rankingCodigo.quantidadeDemais + ' códigos restantes'];
+              return ['Soma de ' + rankingCodigo.quantidadeDemais + ' códigos restantes', 'Clique na barra para ver todos'];
             }
             var d = (window.CMRL && typeof window.CMRL.lookup === 'function') ? window.CMRL.lookup(ctx.label) : null;
             return (d && d !== ctx.label) ? [d] : [];
@@ -1879,72 +2018,34 @@ function CMRL_initDashboard(){
       })
     });
 
-    /* ---- Peso (Kg) por código de material ----
-       Painel separado dos códigos lançados em peças: registros com
-       unidade:'kg' somam pesoKg aqui e nunca entram no gráfico de peças
-       acima nem na soma de "peças retornadas". Painel só aparece quando
-       há pelo menos um retorno por peso no período filtrado. */
-    var porCodigoKg = {};
-    registros.forEach(function(r){
-      if(r.unidade !== 'kg') return;
-      var cod = (r.codigo || '').toString().trim() || '(sem código)';
-      porCodigoKg[cod] = (porCodigoKg[cod] || 0) + (r.pesoKg || 0);
-    });
-    var codigosKgOrdenados = Object.keys(porCodigoKg).sort(function(a,b){ return porCodigoKg[b] - porCodigoKg[a]; });
-    var painelPeso = document.getElementById('painel-peso');
-    if(codigosKgOrdenados.length){
-      painelPeso.style.display = '';
-      var rankingPeso = agruparRankingComDemais(codigosKgOrdenados, porCodigoKg, 12);
-      var codigosKgExibidos = rankingPeso.labels;
-      var wrapPeso = document.getElementById('wrap-chart-peso');
-      if(wrapPeso){
-        wrapPeso.style.height = Math.max(260, 58 + codigosKgExibidos.length * 29) + 'px';
-      }
-      destroyChart('peso');
-      charts.peso = new Chart(document.getElementById('chart-peso'), {
-        type:'bar',
-        data:{ labels: codigosKgExibidos, datasets:[{
-          label:'Kg', data: rankingPeso.dados,
-          backgroundColor: paletteColor('peso', 0), borderRadius:5, maxBarThickness:26
-        }]},
-        options: baseOpts({
-          indexAxis:'y',
-          plugins:{ legend:{display:false}, tooltip:{ callbacks:{
-            label: function(ctx){ return ctx.parsed.x.toLocaleString('pt-BR')+' kg'; },
-            afterLabel: function(ctx){
-              if(ctx.label === 'DEMAIS MATERIAIS'){
-                return ['Soma de ' + rankingPeso.quantidadeDemais + ' códigos restantes'];
-              }
-              var d = (window.CMRL && typeof window.CMRL.lookup === 'function') ? window.CMRL.lookup(ctx.label) : null;
-              return (d && d !== ctx.label) ? [d] : [];
-            }
-          } } },
-          scales:{
-            x:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{color:gridColor()}, beginAtZero:true },
-            y:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{display:false} }
-          }
-        })
-      });
-    }else{
-      painelPeso.style.display = 'none';
-      destroyChart('peso');
+    /* ---- Materiais ocultos (gráfico inteligente) ----
+       O gráfico "Peças por código de material" mostra só os 12 maiores e
+       agrupa o restante em "DEMAIS MATERIAIS". Guardamos aqui a lista
+       completa (todos os códigos com peças > 0) para o modal "Ver todos os
+       materiais", que renderiza sob demanda com busca e ordenação. */
+    materiaisTodosData = { codigos: codigosOrdenados.slice(), valores: porCodigo };
+    var verTodosWrap = document.getElementById('ver-todos-materiais-wrap');
+    if(verTodosWrap){
+      verTodosWrap.innerHTML = rankingCodigo.quantidadeDemais > 0
+        ? ' <button type="button" class="link-btn" id="btn-ver-todos-materiais">Ver todos os ' + codigosOrdenados.length + ' materiais (' + rankingCodigo.quantidadeDemais + ' ocultos) →</button>'
+        : '';
+      var btnVerTodos = document.getElementById('btn-ver-todos-materiais');
+      if(btnVerTodos) btnVerTodos.addEventListener('click', abrirModalTodosMateriais);
     }
+    if(modalMateriaisAberto()) renderChartMateriaisTodos();
 
     /* ---- Volume retornado por mês ----
        O filtro de datas trabalha com mês-calendário. Por isso, o agrupamento
        mensal usa exatamente r.data e não desloca lançamentos da madrugada
-       para o mês anterior. Peças e Kg ficam em séries/eixos separados: são
-       unidades diferentes e nunca devem ser somadas em um único total. */
+       para o mês anterior. Materiais lançados em Kg contam como 1 peça
+       (mesma regra usada em todo o dashboard). */
     var porMesPecas = {};
-    var porMesKg = {};
     registros.forEach(function(r){
       if(!r.data) return;
       var mes = r.data.slice(0, 7);
       if(!/^\d{4}-\d{2}$/.test(mes)) return;
       if(porMesPecas[mes] === undefined) porMesPecas[mes] = 0;
-      if(porMesKg[mes] === undefined) porMesKg[mes] = 0;
       porMesPecas[mes] += pecasDoRegistro(r);
-      if(r.unidade === 'kg') porMesKg[mes] += (r.pesoKg || 0);
     });
     var mesesOrdenados = Object.keys(porMesPecas).sort();
     var mesesAbrev = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -1953,34 +2054,23 @@ function CMRL_initDashboard(){
       var idx = parseInt(p[1], 10) - 1;
       return (mesesAbrev[idx] || p[1]) + '/' + p[0];
     }
-    var haPesoMensal = mesesOrdenados.some(function(m){ return porMesKg[m] > 0; });
     var datasetsMensais = [{
       label:'Peças (un)',
       data: mesesOrdenados.map(function(m){ return porMesPecas[m]; }),
       backgroundColor: paletteColor('dia', 0), borderColor: paletteColor('dia', 0),
       borderWidth:1, borderRadius:6, maxBarThickness:58, yAxisID:'yPecas'
     }];
-    if(haPesoMensal){
-      datasetsMensais.push({
-        label:'Peso (Kg)',
-        data: mesesOrdenados.map(function(m){ return porMesKg[m]; }),
-        backgroundColor: paletteColor('dia', 1), borderColor: paletteColor('dia', 1),
-        borderWidth:1, borderRadius:6, maxBarThickness:58, yAxisID:'yKg'
-      });
-    }
     destroyChart('dia');
     charts.dia = new Chart(document.getElementById('chart-dia'), {
       type:'bar',
       data:{ labels: mesesOrdenados.map(fmtMesAno), datasets:datasetsMensais },
       options: baseOpts({
         plugins:{
-          legend:{display:true, labels:{color:textColor(), font:{family:'Poppins', size:11}}},
+          legend:{display:false},
           tooltip:{ callbacks:{
           label:function(ctx){
             var valor = ctx.parsed.y == null ? 0 : ctx.parsed.y;
-            return ctx.dataset.yAxisID === 'yKg'
-              ? 'Peso: ' + valor.toLocaleString('pt-BR', {maximumFractionDigits:3}) + ' kg'
-              : 'Peças: ' + valor.toLocaleString('pt-BR');
+            return 'Peças: ' + valor.toLocaleString('pt-BR');
           }
         } } },
         scales:{
@@ -1990,12 +2080,6 @@ function CMRL_initDashboard(){
             title:{display:true, text:'Peças (un)', color:textColor()},
             ticks:{color:textColor(), font:{family:'Poppins', size:10}, precision:0},
             grid:{color:gridColor()}
-          },
-          yKg:{
-            type:'linear', position:'right', beginAtZero:true, display:haPesoMensal,
-            title:{display:haPesoMensal, text:'Peso (Kg)', color:textColor()},
-            ticks:{color:textColor(), font:{family:'Poppins', size:10}},
-            grid:{drawOnChartArea:false}
           }
         }
       })
@@ -2123,6 +2207,7 @@ function CMRL_initDashboard(){
   window.CMRL_renderDashboard = renderDashboard;
   initColorInputs();
   initFiltros();
+  initMateriaisModal();
 }
 </script>
 <script>
@@ -2755,10 +2840,12 @@ function CMRL_initRegistros(){
       .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
-  /* Peças de um registro: registros lançados em Kg (unidade:'kg') não têm
-     contagem de peças, só peso — não somam em "Materiais"/"peças". */
+  /* Peças de um registro: a unidade "kg" é desconsiderada — todo registro
+     lançado em Kg soma como 1 unidade em "Materiais"/"peças", igual aos
+     demais materiais. */
   function pecasDoRegistro(r){
-    if(!r || r.unidade === 'kg') return 0;
+    if(!r) return 0;
+    if(r.unidade === 'kg') return 1;
     return r.qtd || 0;
   }
 
@@ -3554,7 +3641,7 @@ function baixarXlsx(wb, nomeArquivo){
 <script>
 /* Exportar cada gráfico do Dashboard como JPEG */
 (function(){
-  var CHART_IDS = ['chart-codigo','chart-peso','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
+  var CHART_IDS = ['chart-codigo','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
   var BG = '#061626';
 
   function slug(s){
@@ -3647,7 +3734,7 @@ function baixarXlsx(wb, nomeArquivo){
 <script>
 /* Imprimir todos os gráficos do Dashboard, um por folha */
 (function(){
-  var CHART_IDS = ['chart-codigo','chart-peso','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
+  var CHART_IDS = ['chart-codigo','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
   var BG = '#061626';
 
   function composeChartImage(canvas){
