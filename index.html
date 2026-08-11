@@ -297,6 +297,8 @@
   .materiais-contagem{font-family:var(--font-mono);font-size:11px;color:var(--txt-faint);white-space:nowrap}
   .materiais-chart-wrap{position:relative;padding:14px 16px;overflow-y:auto;overflow-x:hidden;flex:1 1 auto}
   .materiais-vazio{padding:20px 18px;text-align:center;color:var(--txt-faint);font-size:12.5px}
+  .materiais-acoes{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line-soft);flex-shrink:0}
+  .materiais-acoes .doc-btn{flex:1 1 150px}
 
   .submit{width:100%;cursor:pointer;background:var(--blue);color:#fff;border:1px solid var(--blue-soft);border-radius:3px;
     padding:13px;font-family:var(--font-head);font-size:12.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
@@ -920,10 +922,6 @@
           <div class="field">
             <label>Quantidade <span class="req">*</span></label>
             <input type="number" id="f-qtd" min="0.01" step="any" placeholder="1" required>
-            <label class="chk-inline" style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;font-weight:400;color:var(--txt-dim)">
-              <input type="checkbox" id="f-unidade-kg" style="width:auto">
-              Lançado em Kg (peso), não em peças
-            </label>
           </div>
           <div class="field">
             <label>Horário <span class="req">*</span></label>
@@ -1147,43 +1145,43 @@
           <div class="palette-row"><select id="pal-codigo" aria-label="Paleta do gráfico Peças por código de material"></select><button type="button" class="palette-reset" data-chart-reset="codigo">Padrão</button></div>
         </div>
         <div class="chart-wrap tall" id="wrap-chart-codigo"><canvas id="chart-codigo"></canvas></div>
-        <div class="chart-nota"><b id="total-pecas-codigo">Total do período: —</b><br>Soma a <b>quantidade de peças</b> (não o número de retornos) por código de material — materiais lançados em Kg contam como 1 unidade. Exibe os <b>12 maiores códigos</b> e reúne todos os restantes em <b>DEMAIS MATERIAIS</b>; por isso, a soma das barras confere exatamente com o total acima. Passe o mouse sobre a barra para ver a descrição do material; clique na barra <b>DEMAIS MATERIAIS</b> para ver todos os materiais ocultos.<span id="ver-todos-materiais-wrap"></span></div>
+        <div class="chart-nota"><b id="total-pecas-codigo">Total do período: —</b><br><b>Quantidade de peças</b> (não é o número de ocorrências) por código de material. Exibe os <b>12 maiores códigos</b> e reúne todos os restantes em <b>DEMAIS MATERIAIS</b>; por isso, a soma das barras confere exatamente com o total acima. Passe o mouse sobre a barra para ver a descrição do material; clique na barra <b>DEMAIS MATERIAIS</b> para ver todos os materiais ocultos.<span id="ver-todos-materiais-wrap"></span></div>
       </div>
       <div class="panel span2">
-        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Volume retornado por mês</h2><span class="chart-periodo"></span></div>
+        <div class="panel-head"><span class="tag">TENDÊNCIA</span><h2>Volume retornado por mês (quantidade de peças)</h2><span class="chart-periodo"></span></div>
         <div class="chart-palette-control" data-chart-palette="dia">
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-dia"></div></div>
           <div class="palette-row"><select id="pal-dia" aria-label="Paleta do gráfico Volume retornado por mês"></select><button type="button" class="palette-reset" data-chart-reset="dia">Padrão</button></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-dia"></canvas></div>
-        <div class="chart-nota">Soma a <b>quantidade de peças</b> por mês-calendário (materiais lançados em Kg contam como 1 unidade). O total mensal confere com os KPIs e com os totais por material. A quantidade de lançamentos permanece no KPI “Total de retornos”.</div>
+        <div class="chart-nota"><b>Quantidade de peças</b> retornadas por mês-calendário. O total mensal confere com os KPIs e com os totais por material. Não é o número de ocorrências (ver KPI "Total de ocorrências") — um mês pode ter poucas ocorrências e muitas peças, se algum lançamento tiver quantidade alta.</div>
       </div>
       <div class="panel span2">
-        <div class="panel-head"><span class="tag">PERÍODO DO MÊS</span><h2>Movimentações e peças por dia do mês</h2><span class="chart-periodo"></span></div>
+        <div class="panel-head"><span class="tag">PERÍODO DO MÊS</span><h2>Ocorrências e peças por dia do mês</h2><span class="chart-periodo"></span></div>
         <div class="chart-palette-control" data-chart-palette="diames">
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-diames"></div></div>
-          <div class="palette-row"><select id="pal-diames" aria-label="Paleta do gráfico Movimentações e peças por dia do mês"></select><button type="button" class="palette-reset" data-chart-reset="diames">Padrão</button></div>
+          <div class="palette-row"><select id="pal-diames" aria-label="Paleta do gráfico Ocorrências e peças por dia do mês"></select><button type="button" class="palette-reset" data-chart-reset="diames">Padrão</button></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-diames"></canvas></div>
-        <div class="chart-nota">Soma, por dia (1–31), de todos os meses do período: <b>Retornos</b> é o número de vezes que houve um lançamento naquele dia (movimentações); <b>Peças</b> é a quantidade de material (materiais em Kg contam como 1 unidade). São medidas diferentes — um dia com poucos retornos pode ter muitas peças.</div>
+        <div class="chart-nota">Soma, por dia (1–31), de todos os meses do período. Duas medidas diferentes, lado a lado: <b>Ocorrência</b> = 1 cada vez que um material é lançado/registrado (não importa a quantidade); <b>Peça</b> = quantidade de material daquele lançamento. Um dia com poucas ocorrências pode ter muitas peças, se um só lançamento tiver quantidade alta — por isso as barras não devem ser comparadas como se fossem a mesma coisa.</div>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="tag">TURNO</span><h2>Retornos por turno</h2><span class="chart-periodo"></span></div>
+        <div class="panel-head"><span class="tag">TURNO</span><h2>Ocorrências por turno</h2><span class="chart-periodo"></span></div>
         <div class="chart-palette-control" data-chart-palette="turno">
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-turno"></div></div>
-          <div class="palette-row"><select id="pal-turno" aria-label="Paleta do gráfico Retornos por turno"></select><button type="button" class="palette-reset" data-chart-reset="turno">Padrão</button></div>
+          <div class="palette-row"><select id="pal-turno" aria-label="Paleta do gráfico Ocorrências por turno"></select><button type="button" class="palette-reset" data-chart-reset="turno">Padrão</button></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-turno"></canvas></div>
-        <div class="chart-nota">Conta o <b>número de retornos</b> (movimentações) por turno — não é quantidade de peças.</div>
+        <div class="chart-nota">Conta o <b>número de ocorrências</b> (registros lançados) por turno — não é quantidade de peças.</div>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="tag">EMBALAGEM</span><h2>Retornos por tipo de embalagem</h2><span class="chart-periodo"></span></div>
+        <div class="panel-head"><span class="tag">EMBALAGEM</span><h2>Ocorrências por tipo de embalagem</h2><span class="chart-periodo"></span></div>
         <div class="chart-palette-control" data-chart-palette="caixa">
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-caixa"></div></div>
-          <div class="palette-row"><select id="pal-caixa" aria-label="Paleta do gráfico Tipo de embalagem"></select><button type="button" class="palette-reset" data-chart-reset="caixa">Padrão</button></div>
+          <div class="palette-row"><select id="pal-caixa" aria-label="Paleta do gráfico Ocorrências por tipo de embalagem"></select><button type="button" class="palette-reset" data-chart-reset="caixa">Padrão</button></div>
         </div>
         <div class="chart-wrap small"><canvas id="chart-caixa"></canvas></div>
-        <div class="chart-nota">Conta o <b>número de retornos</b> (movimentações) por tipo de embalagem — não é quantidade de peças.</div>
+        <div class="chart-nota">Conta o <b>número de ocorrências</b> (registros lançados) por tipo de embalagem — não é quantidade de peças.</div>
       </div>
       <div class="panel">
         <div class="panel-head"><span class="tag">ETIQUETAS</span><h2>Etiquetas encontradas</h2><span class="chart-periodo"></span></div>
@@ -1192,16 +1190,7 @@
           <div class="palette-row"><select id="pal-huot" aria-label="Paleta do gráfico Etiquetas encontradas"></select><button type="button" class="palette-reset" data-chart-reset="huot">Padrão</button></div>
         </div>
         <div class="chart-wrap small"><canvas id="chart-huot"></canvas></div>
-        <div class="chart-nota">Quantidade de <b>retornos</b> (não de peças) em que cada etiqueta (HU, OT, SEQ) foi encontrada.</div>
-      </div>
-      <div class="panel" id="painel-confianca" style="display:none">
-        <div class="panel-head"><span class="tag">QUALIDADE DA LEITURA</span><h2>Confiança da leitura por IA</h2><span class="chart-periodo"></span></div>
-        <div class="chart-palette-control" data-chart-palette="confianca">
-          <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-confianca"></div></div>
-          <div class="palette-row"><select id="pal-confianca" aria-label="Paleta do gráfico Confiança da leitura IA"></select><button type="button" class="palette-reset" data-chart-reset="confianca">Padrão</button></div>
-        </div>
-        <div class="chart-wrap small"><canvas id="chart-confianca"></canvas></div>
-        <div class="chart-nota">Só se aplica a dados que uma inteligência artificial extraiu de imagens de cadernos manuscritos: mede a dificuldade de leitura da imagem, não a qualidade do dado. Não vale para dados digitados no app ou importados de planilha.</div>
+        <div class="chart-nota">Quantidade de <b>ocorrências</b> (não de peças) em que cada etiqueta (HU, OT, SEQ) foi encontrada.</div>
       </div>
     </div>
 
@@ -1229,6 +1218,11 @@
         <canvas id="chart-materiais-todos"></canvas>
       </div>
       <p class="materiais-vazio" id="materiais-vazio" style="display:none">Nenhum material encontrado para essa busca.</p>
+      <div class="materiais-acoes">
+        <button type="button" class="doc-btn" id="materiais-baixa-qtd">🔻 Ordenar por quantidade baixa</button>
+        <button type="button" class="doc-btn" id="materiais-imprimir">🖶 Imprimir</button>
+        <button type="button" class="doc-btn primary" id="materiais-jpeg">⬇ Baixar JPEG</button>
+      </div>
     </div>
   </div>
 
@@ -1591,6 +1585,94 @@ function CMRL_initDashboard(){
       })
     });
   }
+
+  /* ---- Baixar/imprimir o gráfico "Ver todos os materiais" (JPEG) ----
+     Mesmo visual dos botões de exportação do dashboard (fundo escuro,
+     título e subtítulo), aplicado ao gráfico do modal, que fica de fora
+     do CHART_IDS usado pelos outros scripts de exportação. */
+  function slugMateriais(s){
+    return (s||'materiais').toString().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60) || 'materiais';
+  }
+  function subtituloMateriais(){
+    var ordemEl = document.getElementById('materiais-ordem');
+    var buscaEl = document.getElementById('materiais-busca');
+    var partes = [];
+    if(ordemEl){
+      var txtOrdem = { desc:'Maior quantidade primeiro', asc:'Menor quantidade primeiro', cod:'Código (A→Z)' }[ordemEl.value];
+      if(txtOrdem) partes.push(txtOrdem);
+    }
+    if(buscaEl && buscaEl.value.trim()) partes.push('Busca: "' + buscaEl.value.trim() + '"');
+    var contagemEl = document.getElementById('materiais-contagem');
+    if(contagemEl && contagemEl.textContent) partes.push(contagemEl.textContent);
+    return partes.join(' · ');
+  }
+  function composeMateriaisImage(){
+    var canvas = document.getElementById('chart-materiais-todos');
+    if(!canvas || !charts.materiaisTodos) return null;
+    var w = canvas.width, h = canvas.height;
+    if(!w || !h) return null;
+    var title = 'Todos os materiais (peças)';
+    var subtitle = subtituloMateriais();
+    var BG = '#061626';
+    var scale = Math.max(1, w/700);
+    var pad = Math.round(20*scale), tSize = Math.round(22*scale), sSize = Math.round(13*scale);
+    var headH = 0; if(title) headH += Math.round(tSize*1.3); if(subtitle) headH += Math.round(sSize*1.5);
+    var gap = headH ? Math.round(10*scale) : 0;
+    var out = document.createElement('canvas');
+    out.width = w + pad*2; out.height = pad + headH + gap + h + pad;
+    var ctx = out.getContext('2d');
+    ctx.fillStyle = BG; ctx.fillRect(0,0,out.width,out.height);
+    var y = pad;
+    if(title){ ctx.fillStyle='#edf7ff'; ctx.font='600 '+tSize+'px Poppins, Arial, sans-serif'; ctx.textBaseline='top'; ctx.fillText(title, pad, y); y += Math.round(tSize*1.3); }
+    if(subtitle){ ctx.fillStyle='#97cbff'; ctx.font='500 '+sSize+'px Poppins, Arial, sans-serif'; ctx.textBaseline='top'; ctx.fillText(subtitle, pad, y); y += Math.round(sSize*1.5); }
+    y += gap;
+    ctx.drawImage(canvas, pad, y, w, h);
+    try { return out.toDataURL('image/jpeg', 0.95); } catch(e){ return null; }
+  }
+  function baixarJpegMateriais(){
+    var url = composeMateriaisImage();
+    if(!url){ alert('Abra a lista de materiais e aguarde o gráfico aparecer antes de baixar.'); return; }
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = slugMateriais('materiais-' + (document.getElementById('materiais-ordem') ? document.getElementById('materiais-ordem').value : '')) + '.jpg';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); }, 120);
+  }
+  function imprimirMateriais(){
+    var url = composeMateriaisImage();
+    if(!url){ alert('Abra a lista de materiais e aguarde o gráfico aparecer antes de imprimir.'); return; }
+    var html = '<!doctype html><html><head><meta charset="utf-8"><title>Materiais — Controle de Retorno de Linha</title>'
+      + '<style>@page{size:A4;margin:12mm}html,body{margin:0;padding:0;background:#fff}'
+      + '.pg{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 24mm)}'
+      + '.pg img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}'
+      + '</style></head><body><div class="pg"><img src="'+url+'"></div></body></html>';
+    var ifr = document.createElement('iframe');
+    ifr.setAttribute('aria-hidden','true');
+    ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(ifr);
+    var d = ifr.contentWindow.document;
+    d.open(); d.write(html); d.close();
+    var win = ifr.contentWindow;
+    var done = false;
+    function go(){
+      try { win.focus(); win.print(); } catch(e){}
+      setTimeout(function(){ if(ifr.parentNode) ifr.parentNode.removeChild(ifr); }, 1500);
+    }
+    function ready(){ if(done) return; done = true; setTimeout(go, 150); }
+    var imgsEl = d.images, left = imgsEl.length;
+    if(!left){ ready(); }
+    else {
+      for(var i=0;i<imgsEl.length;i++){
+        if(imgsEl[i].complete){ if(--left<=0) ready(); }
+        else { imgsEl[i].onload = imgsEl[i].onerror = function(){ if(--left<=0) ready(); }; }
+      }
+      setTimeout(ready, 2500);
+    }
+  }
+
   function initMateriaisModal(){
     var modal = document.getElementById('materiais-modal');
     if(!modal) return;
@@ -1604,6 +1686,14 @@ function CMRL_initDashboard(){
     if(buscaEl) buscaEl.addEventListener('input', renderChartMateriaisTodos);
     var ordemEl = document.getElementById('materiais-ordem');
     if(ordemEl) ordemEl.addEventListener('change', renderChartMateriaisTodos);
+    var btnBaixaQtd = document.getElementById('materiais-baixa-qtd');
+    if(btnBaixaQtd) btnBaixaQtd.addEventListener('click', function(){
+      if(ordemEl){ ordemEl.value = 'asc'; renderChartMateriaisTodos(); }
+    });
+    var btnImprimir = document.getElementById('materiais-imprimir');
+    if(btnImprimir) btnImprimir.addEventListener('click', imprimirMateriais);
+    var btnJpeg = document.getElementById('materiais-jpeg');
+    if(btnJpeg) btnJpeg.addEventListener('click', baixarJpegMateriais);
   }
 
   function loadRegistros(){
@@ -1631,7 +1721,7 @@ function CMRL_initDashboard(){
     qualidade:{nome:'Qualidade IA', cores:['#3fb950','#f0953f','#f0533f']}
   };
   var CHART_PALETTE_DEFAULT = {
-    codigo:'azul', dia:'azul', diames:'critico', turno:'turnos', caixa:'embalagem', huot:'etiquetas', confianca:'qualidade'
+    codigo:'azul', dia:'azul', diames:'critico', turno:'turnos', caixa:'embalagem', huot:'etiquetas'
   };
   function cloneChartPaletteDefault(){ return Object.assign({}, CHART_PALETTE_DEFAULT); }
   function loadChartPalettes(){
@@ -1761,9 +1851,10 @@ function CMRL_initDashboard(){
   }
 
   /* ---- Peças de um registro ----
-     A unidade de medida "kg" é desconsiderada nos relatórios/gráficos:
-     todo registro lançado em Kg soma como 1 unidade (peça), igual a
-     qualquer outro material, em vez de entrar por peso. */
+     A unidade "kg" não existe mais como opção de lançamento — fica aqui só
+     por compatibilidade com registros antigos já importados que ainda têm
+     unidade:'kg' gravado; esses contam como 1 unidade (peça), igual a
+     qualquer outro material. */
   function pecasDoRegistro(r){
     if(!r) return 0;
     if(r.unidade === 'kg') return 1;
@@ -1906,8 +1997,6 @@ function CMRL_initDashboard(){
     var totalCodigos = Object.keys(codigos).length;
     var comHU = registros.filter(function(r){ return r.hu === true; }).length;
     var pctHU = total ? Math.round(comHU/total*100) : 0;
-    var importados = registros.filter(function(r){ return r.importado; });
-    var baixaConf = importados.filter(function(r){ return r.confianca === 'Baixa'; }).length;
     var datasValidas = registros.map(function(r){ return r.data; }).filter(Boolean).sort();
     var periodo = datasValidas.length ? fmtDataBR(datasValidas[0])+' a '+fmtDataBR(datasValidas[datasValidas.length-1]) : '—';
     document.querySelectorAll('.chart-periodo').forEach(function(el){ el.textContent = 'Período: ' + periodo; });
@@ -1941,7 +2030,7 @@ function CMRL_initDashboard(){
     var semEtiqueta = registros.filter(function(r){ return r.hu!==true && r.ot!==true && r.seq!==true; }).length;
 
     document.getElementById('dash-kpis').innerHTML =
-      '<div class="kpi"><div class="v">'+total+'</div><div class="k">Total de retornos</div></div>' +
+      '<div class="kpi"><div class="v">'+total+'</div><div class="k">Total de ocorrências</div></div>' +
       '<div class="kpi"><div class="v">'+totalQtd+'</div><div class="k">Peças retornadas</div></div>' +
       '<div class="kpi'+(turnoTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(turnoTop?turnoTop+'º ('+turnoTopPct+'%)':'—')+'</div><div class="k">Turno mais crítico</div></div>' +
       '<div class="kpi'+(caixaTop?' k-warn':'')+'"><div class="v" style="font-size:15px">'+(caixaTop?caixaTopNome+' ('+caixaTopPct+'%)':'—')+'</div><div class="k">Embalagem mais crítica</div></div>' +
@@ -2087,21 +2176,20 @@ function CMRL_initDashboard(){
       })
     });
 
-    /* ---- Retornos por dia do mês (1–31) ----
+    /* ---- Ocorrências e peças por dia do mês (1–31) ----
        Duas medidas propositalmente separadas, para não gerar confusão:
-       "Retornos" = número de vezes que houve um lançamento naquele dia
-       (movimentações, 1 por registro); "Peças" = soma de pecasDoRegistro
-       (quantidade de material — mesma regra do resto do dashboard, em que
-       um registro em Kg conta como 1 peça). Um dia pode ter poucos
-       retornos e muitas peças (um só lançamento com qtd alta), por isso os
-       dois números não devem ser lidos como sinônimos. */
-    var porDiaMesRetornos = {}, porDiaMesPecas = {};
-    for(var dm=1; dm<=31; dm++){ porDiaMesRetornos[dm]=0; porDiaMesPecas[dm]=0; }
+       "Ocorrência" = 1 por registro/lançamento, não importa a quantidade;
+       "Peça" = soma de pecasDoRegistro (quantidade de material lançada).
+       Um dia pode ter poucas ocorrências e muitas peças (um só lançamento
+       com qtd alta), por isso os dois números não devem ser lidos como
+       sinônimos. */
+    var porDiaMesOcorrencias = {}, porDiaMesPecas = {};
+    for(var dm=1; dm<=31; dm++){ porDiaMesOcorrencias[dm]=0; porDiaMesPecas[dm]=0; }
     registros.forEach(function(r){
       if(!r.data) return;
       var d = parseInt(r.data.split('-')[2],10);
       if(d>=1 && d<=31){
-        porDiaMesRetornos[d]++;
+        porDiaMesOcorrencias[d]++;
         porDiaMesPecas[d] += pecasDoRegistro(r);
       }
     });
@@ -2111,12 +2199,12 @@ function CMRL_initDashboard(){
       type:'bar',
       data:{ labels: diasMes, datasets:[
         {
-          label:'Retornos (movimentações)',
-          data: diasMes.map(function(d){ return porDiaMesRetornos[d]; }),
-          backgroundColor: paletteColor('diames', 0), borderRadius:3, yAxisID:'yRetornosDia'
+          label:'Ocorrências',
+          data: diasMes.map(function(d){ return porDiaMesOcorrencias[d]; }),
+          backgroundColor: paletteColor('diames', 0), borderRadius:3, yAxisID:'yOcorrenciasDia'
         },
         {
-          label:'Peças (unidades)',
+          label:'Peças',
           data: diasMes.map(function(d){ return porDiaMesPecas[d]; }),
           backgroundColor: paletteColor('diames', 1), borderRadius:3, yAxisID:'yPecasDia'
         }
@@ -2133,15 +2221,15 @@ function CMRL_initDashboard(){
         },
         scales:{
           x:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{display:false} },
-          yRetornosDia:{
+          yOcorrenciasDia:{
             type:'linear', position:'left', beginAtZero:true,
-            title:{display:true, text:'Retornos (movimentações)', color:textColor()},
+            title:{display:true, text:'Ocorrências', color:textColor()},
             ticks:{color:textColor(), font:{family:'Poppins', size:10}, precision:0},
             grid:{color:gridColor()}
           },
           yPecasDia:{
             type:'linear', position:'right', beginAtZero:true,
-            title:{display:true, text:'Peças (unidades)', color:textColor()},
+            title:{display:true, text:'Peças', color:textColor()},
             ticks:{color:textColor(), font:{family:'Poppins', size:10}, precision:0},
             grid:{drawOnChartArea:false}
           }
@@ -2149,12 +2237,12 @@ function CMRL_initDashboard(){
       })
     });
 
-    /* ---- Retornos por turno (ocorrências) ---- */
+    /* ---- Ocorrências por turno ---- */
     destroyChart('turno');
     charts.turno = new Chart(document.getElementById('chart-turno'), {
       type:'bar',
       data:{ labels:['1º Turno','2º Turno','3º Turno'], datasets:[{
-        label:'Retornos', data:[porTurnoCount['1'],porTurnoCount['2'],porTurnoCount['3']],
+        label:'Ocorrências', data:[porTurnoCount['1'],porTurnoCount['2'],porTurnoCount['3']],
         backgroundColor:paletteColors('turno', 3), borderRadius:6
       }]},
       options: baseOpts({ plugins:{ legend:{display:false} } })
@@ -2191,42 +2279,22 @@ function CMRL_initDashboard(){
       options: baseOpts({ plugins:{ legend:{display:false} } })
     });
 
-    /* ---- Confiança da leitura (só p/ dados importados de caderno) ---- */
-    var painelConf = document.getElementById('painel-confianca');
-    if(importados.length){
-      if(painelConf) painelConf.style.display = '';
-      var confCount = {'Alta':0,'Média':0,'Baixa':0};
-      importados.forEach(function(r){ if(confCount[r.confianca] !== undefined) confCount[r.confianca]++; });
-      destroyChart('confianca');
-      charts.confianca = new Chart(document.getElementById('chart-confianca'), {
-        type:'pie',
-        data:{ labels:['Alta','Média','Baixa'], datasets:[{
-          data:[confCount['Alta'], confCount['Média'], confCount['Baixa']],
-          backgroundColor:paletteColors('confianca', 3), borderWidth:0
-        }]},
-        options: baseOpts({ scales:{} })
-      });
-    }else{
-      if(painelConf) painelConf.style.display = 'none';
-      destroyChart('confianca');
-    }
-
     }
 
     /* ---- Relatório de pontos críticos (texto, funciona mesmo sem gráficos) ---- */
     var relEl = document.getElementById('dash-relatorio');
     if(relEl){
       if(!total){
-        relEl.innerHTML = '<p class="rel-vazio">Sem retornos no período/filtros selecionados.</p>';
+        relEl.innerHTML = '<p class="rel-vazio">Sem ocorrências no período/filtros selecionados.</p>';
       }else{
         var pct = function(n){ return Math.round(n/total*100); };
         var linhas = [];
-        linhas.push('No recorte atual há <b>'+total+' retornos</b> ('+totalQtd+' peças).');
-        if(tercoTop) linhas.push('Maior concentração no <b>'+tercoTop.toLowerCase()+' do mês</b> — '+terco[tercoTop]+' retornos ('+tercoTopPct+'%).');
-        if(turnoTop) linhas.push('Turno mais crítico: <b>'+turnoTop+'º turno</b> — '+porTurnoCount[turnoTop]+' retornos ('+turnoTopPct+'%).');
-        if(caixaTop) linhas.push('Embalagem com mais retornos: <b>'+caixaTopNome+'</b> — '+caixaTopVal+' retornos ('+caixaTopPct+'%).');
+        linhas.push('No recorte atual há <b>'+total+' ocorrências</b> ('+totalQtd+' peças).');
+        if(tercoTop) linhas.push('Maior concentração no <b>'+tercoTop.toLowerCase()+' do mês</b> — '+terco[tercoTop]+' ocorrências ('+tercoTopPct+'%).');
+        if(turnoTop) linhas.push('Turno mais crítico: <b>'+turnoTop+'º turno</b> — '+porTurnoCount[turnoTop]+' ocorrências ('+turnoTopPct+'%).');
+        if(caixaTop) linhas.push('Embalagem com mais ocorrências: <b>'+caixaTopNome+'</b> — '+caixaTopVal+' ocorrências ('+caixaTopPct+'%).');
         linhas.push('Etiquetas encontradas: <b>HU '+huEnc+'</b> · <b>OT '+otEnc+'</b> · <b>SEQ '+seqEnc+'</b>. Sem nenhuma etiqueta identificada: <b>'+semEtiqueta+'</b> ('+pct(semEtiqueta)+'%).');
-        /* Ranking por PEÇAS (soma de qtd, não nº de retornos) — cada código
+        /* Ranking por PEÇAS (soma de qtd, não nº de ocorrências) — cada código
            mostrado junto da sua descrição, usando a descrição já gravada
            no próprio registro e, na falta dela, o cadastro de materiais. */
         var porCod = {}; var descCod = {};
@@ -2619,7 +2687,6 @@ function CMRL_initRegistros(){
     document.getElementById('f-codigo').value = '';
     document.getElementById('f-descricao').value = '';
     document.getElementById('f-qtd').value = '';
-    document.getElementById('f-unidade-kg').checked = false;
     document.getElementById('f-horario').value = agoraHM();
     turnoSel = null; caixaSel = [];
     document.querySelectorAll('#seg-turno .seg-btn, #seg-caixa .seg-btn').forEach(function(b){ b.classList.remove('on'); });
@@ -2702,7 +2769,6 @@ function CMRL_initRegistros(){
     var codigo = document.getElementById('f-codigo').value.trim().toUpperCase();
     var qtdDigitada = parseFloat(document.getElementById('f-qtd').value);
     var horario = document.getElementById('f-horario').value;
-    var emKg = document.getElementById('f-unidade-kg').checked;
 
     if(!data || !codigo || !Number.isFinite(qtdDigitada) || qtdDigitada <= 0 || !horario){
       hintEl.textContent = 'Preencha data, código, quantidade e horário.';
@@ -2728,12 +2794,7 @@ function CMRL_initRegistros(){
     var reg = {
       id: editId || Date.now(),
       data: data, codigo: codigo, descricao: document.getElementById('f-descricao').value.trim(),
-      /* Registros em Kg (peso) não contam como peças: qtd fica nula e o
-         valor digitado vai para pesoKg. Isso evita o peso "virar" peça na
-         soma de peças retornadas e nos rankings por material. */
-      qtd: emKg ? null : qtdDigitada,
-      unidade: emKg ? 'kg' : 'un',
-      pesoKg: emKg ? qtdDigitada : null,
+      qtd: qtdDigitada,
       horario: horario,
       hu: huOn, ot: otOn, seq: seqOn,
       huNum: huOn ? getNumero(0) : null,
@@ -2890,9 +2951,10 @@ function CMRL_initRegistros(){
       .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
-  /* Peças de um registro: a unidade "kg" é desconsiderada — todo registro
-     lançado em Kg soma como 1 unidade em "Materiais"/"peças", igual aos
-     demais materiais. */
+  /* Peças de um registro: a unidade "kg" não existe mais como opção de
+     lançamento — fica aqui só por compatibilidade com registros antigos já
+     importados; esses contam como 1 unidade em "Materiais"/"peças", igual
+     aos demais materiais. */
   function pecasDoRegistro(r){
     if(!r) return 0;
     if(r.unidade === 'kg') return 1;
@@ -2905,13 +2967,11 @@ function CMRL_initRegistros(){
     /* stats */
     var totalReg = lista.length;
     var totalQtd = lista.reduce(function(s,r){ return s + pecasDoRegistro(r); }, 0);
-    var totalKg = lista.reduce(function(s,r){ return s + (r.unidade === 'kg' ? (r.pesoKg || 0) : 0); }, 0);
     var totalHU = lista.filter(function(r){ return r.hu; }).length;
     var totalOT = lista.filter(function(r){ return r.ot; }).length;
     document.getElementById('stats').innerHTML =
       '<div class="stat"><div class="v">'+totalReg+'</div><div class="k">Registros</div></div>' +
       '<div class="stat"><div class="v">'+totalQtd+'</div><div class="k">Materiais</div></div>' +
-      (totalKg ? '<div class="stat"><div class="v">'+totalKg.toLocaleString('pt-BR')+' kg</div><div class="k">Por peso</div></div>' : '') +
       '<div class="stat"><div class="v">'+totalHU+'</div><div class="k">Com HU</div></div>' +
       '<div class="stat"><div class="v">'+totalOT+'</div><div class="k">Com OT</div></div>';
 
@@ -2950,7 +3010,7 @@ function CMRL_initRegistros(){
           '<td data-label="Data">'+fmtData(r.data)+selo+'</td>' +
           '<td data-label="Código"><b>'+esc(r.codigo)+'</b></td>' +
           '<td data-label="Descrição">'+(r.descricao ? esc(r.descricao) : (r.importado && r.confianca === 'Baixa' ? '<span style="color:var(--warn)">⚠ Não localizada no cadastro</span>' : '<span style="color:var(--txt-faint)">—</span>'))+'</td>' +
-          '<td data-label="Qtd">'+(r.unidade === 'kg' ? esc(String(r.pesoKg))+' kg' : (r.qtd==null ? '<span style="color:var(--txt-faint)">—</span>' : r.qtd))+'</td>' +
+          '<td data-label="Qtd">'+(r.qtd==null ? '<span style="color:var(--txt-faint)">—</span>' : r.qtd)+'</td>' +
           '<td data-label="Horário">'+(r.horario||'<span style="color:var(--txt-faint)">—</span>')+'</td>' +
           '<td data-label="Marcações">'+marcacoes+'</td>' +
           '<td data-label="Turno">'+turnos+'</td>' +
@@ -3005,8 +3065,7 @@ function CMRL_initRegistros(){
     document.getElementById('btn-submit').textContent = 'Atualizar registro';
     document.getElementById('f-data').value = r.data || hojeISO();
     document.getElementById('f-codigo').value = r.codigo;
-    document.getElementById('f-unidade-kg').checked = r.unidade === 'kg';
-    document.getElementById('f-qtd').value = r.unidade === 'kg' ? (r.pesoKg == null ? '' : r.pesoKg) : (r.qtd == null ? '' : r.qtd);
+    document.getElementById('f-qtd').value = r.qtd == null ? (r.pesoKg == null ? '' : r.pesoKg) : r.qtd;
     document.getElementById('f-horario').value = (r.horario && /^\d{2}:\d{2}$/.test(r.horario)) ? r.horario : agoraHM();
     turnoSel = (r.turno && r.turno[0]) || null;
     caixaSel = (r.caixa || []).slice();
@@ -3060,8 +3119,7 @@ function CMRL_initRegistros(){
         'Data': fmtData(r.data),
         'Código do Material': r.codigo,
         'Descrição': r.descricao || '',
-        'Quantidade (peças)': r.unidade === 'kg' ? '' : r.qtd,
-        'Peso (Kg)': r.unidade === 'kg' ? r.pesoKg : '',
+        'Quantidade (peças)': r.qtd == null ? '' : r.qtd,
         'Horário': r.horario,
         'HU': r.hu === true ? 'Sim' : (r.hu === false ? 'Não' : 'Indefinido'),
         'Nº HU': r.huNum || '',
@@ -3691,7 +3749,7 @@ function baixarXlsx(wb, nomeArquivo){
 <script>
 /* Exportar cada gráfico do Dashboard como JPEG */
 (function(){
-  var CHART_IDS = ['chart-codigo','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
+  var CHART_IDS = ['chart-codigo','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot'];
   var BG = '#061626';
 
   function slug(s){
@@ -3784,7 +3842,7 @@ function baixarXlsx(wb, nomeArquivo){
 <script>
 /* Imprimir todos os gráficos do Dashboard, um por folha */
 (function(){
-  var CHART_IDS = ['chart-codigo','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot','chart-confianca'];
+  var CHART_IDS = ['chart-codigo','chart-dia','chart-diames','chart-turno','chart-caixa','chart-huot'];
   var BG = '#061626';
 
   function composeChartImage(canvas){
