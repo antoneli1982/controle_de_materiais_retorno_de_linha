@@ -1159,13 +1159,13 @@
         <div class="chart-nota">Soma a <b>quantidade de peças</b> por mês-calendário (materiais lançados em Kg contam como 1 unidade). O total mensal confere com os KPIs e com os totais por material. A quantidade de lançamentos permanece no KPI “Total de retornos”.</div>
       </div>
       <div class="panel span2">
-        <div class="panel-head"><span class="tag">PERÍODO DO MÊS</span><h2>Retornos por dia do mês</h2><span class="chart-periodo"></span></div>
+        <div class="panel-head"><span class="tag">PERÍODO DO MÊS</span><h2>Movimentações e peças por dia do mês</h2><span class="chart-periodo"></span></div>
         <div class="chart-palette-control" data-chart-palette="diames">
           <div class="palette-line"><span class="palette-title">Paleta do gráfico</span><div class="palette-preview" id="preview-diames"></div></div>
-          <div class="palette-row"><select id="pal-diames" aria-label="Paleta do gráfico Retornos por dia do mês"></select><button type="button" class="palette-reset" data-chart-reset="diames">Padrão</button></div>
+          <div class="palette-row"><select id="pal-diames" aria-label="Paleta do gráfico Movimentações e peças por dia do mês"></select><button type="button" class="palette-reset" data-chart-reset="diames">Padrão</button></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-diames"></canvas></div>
-        <div class="chart-nota">Soma os retornos de todos os meses por dia (1–31).</div>
+        <div class="chart-nota">Soma, por dia (1–31), de todos os meses do período: <b>Retornos</b> é o número de vezes que houve um lançamento naquele dia (movimentações); <b>Peças</b> é a quantidade de material (materiais em Kg contam como 1 unidade). São medidas diferentes — um dia com poucos retornos pode ter muitas peças.</div>
       </div>
       <div class="panel">
         <div class="panel-head"><span class="tag">TURNO</span><h2>Retornos por turno</h2><span class="chart-periodo"></span></div>
@@ -1174,6 +1174,7 @@
           <div class="palette-row"><select id="pal-turno" aria-label="Paleta do gráfico Retornos por turno"></select><button type="button" class="palette-reset" data-chart-reset="turno">Padrão</button></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-turno"></canvas></div>
+        <div class="chart-nota">Conta o <b>número de retornos</b> (movimentações) por turno — não é quantidade de peças.</div>
       </div>
       <div class="panel">
         <div class="panel-head"><span class="tag">EMBALAGEM</span><h2>Retornos por tipo de embalagem</h2><span class="chart-periodo"></span></div>
@@ -1182,6 +1183,7 @@
           <div class="palette-row"><select id="pal-caixa" aria-label="Paleta do gráfico Tipo de embalagem"></select><button type="button" class="palette-reset" data-chart-reset="caixa">Padrão</button></div>
         </div>
         <div class="chart-wrap small"><canvas id="chart-caixa"></canvas></div>
+        <div class="chart-nota">Conta o <b>número de retornos</b> (movimentações) por tipo de embalagem — não é quantidade de peças.</div>
       </div>
       <div class="panel">
         <div class="panel-head"><span class="tag">ETIQUETAS</span><h2>Etiquetas encontradas</h2><span class="chart-periodo"></span></div>
@@ -1190,7 +1192,7 @@
           <div class="palette-row"><select id="pal-huot" aria-label="Paleta do gráfico Etiquetas encontradas"></select><button type="button" class="palette-reset" data-chart-reset="huot">Padrão</button></div>
         </div>
         <div class="chart-wrap small"><canvas id="chart-huot"></canvas></div>
-        <div class="chart-nota">Quantidade de retornos em que cada etiqueta (HU, OT, SEQ) foi encontrada.</div>
+        <div class="chart-nota">Quantidade de <b>retornos</b> (não de peças) em que cada etiqueta (HU, OT, SEQ) foi encontrada.</div>
       </div>
       <div class="panel" id="painel-confianca" style="display:none">
         <div class="panel-head"><span class="tag">QUALIDADE DA LEITURA</span><h2>Confiança da leitura por IA</h2><span class="chart-periodo"></span></div>
@@ -2085,18 +2087,66 @@ function CMRL_initDashboard(){
       })
     });
 
-    /* ---- Retornos por dia do mês (1–31) ---- */
-    var porDiaMes = {}; for(var dm=1; dm<=31; dm++) porDiaMes[dm]=0;
-    registros.forEach(function(r){ if(r.data){ var d=parseInt(r.data.split('-')[2],10); if(d>=1&&d<=31) porDiaMes[d]++; } });
+    /* ---- Retornos por dia do mês (1–31) ----
+       Duas medidas propositalmente separadas, para não gerar confusão:
+       "Retornos" = número de vezes que houve um lançamento naquele dia
+       (movimentações, 1 por registro); "Peças" = soma de pecasDoRegistro
+       (quantidade de material — mesma regra do resto do dashboard, em que
+       um registro em Kg conta como 1 peça). Um dia pode ter poucos
+       retornos e muitas peças (um só lançamento com qtd alta), por isso os
+       dois números não devem ser lidos como sinônimos. */
+    var porDiaMesRetornos = {}, porDiaMesPecas = {};
+    for(var dm=1; dm<=31; dm++){ porDiaMesRetornos[dm]=0; porDiaMesPecas[dm]=0; }
+    registros.forEach(function(r){
+      if(!r.data) return;
+      var d = parseInt(r.data.split('-')[2],10);
+      if(d>=1 && d<=31){
+        porDiaMesRetornos[d]++;
+        porDiaMesPecas[d] += pecasDoRegistro(r);
+      }
+    });
     var diasMes = []; for(var dm2=1; dm2<=31; dm2++) diasMes.push(dm2);
     destroyChart('diames');
     charts.diames = new Chart(document.getElementById('chart-diames'), {
       type:'bar',
-      data:{ labels: diasMes, datasets:[{
-        label:'Retornos', data: diasMes.map(function(d){ return porDiaMes[d]; }),
-        backgroundColor: diasMes.map(function(){ return paletteColor('diames', 0); }), borderRadius:3
-      }]},
-      options: baseOpts({ plugins:{ legend:{display:false} } })
+      data:{ labels: diasMes, datasets:[
+        {
+          label:'Retornos (movimentações)',
+          data: diasMes.map(function(d){ return porDiaMesRetornos[d]; }),
+          backgroundColor: paletteColor('diames', 0), borderRadius:3, yAxisID:'yRetornosDia'
+        },
+        {
+          label:'Peças (unidades)',
+          data: diasMes.map(function(d){ return porDiaMesPecas[d]; }),
+          backgroundColor: paletteColor('diames', 1), borderRadius:3, yAxisID:'yPecasDia'
+        }
+      ]},
+      options: baseOpts({
+        plugins:{
+          legend:{display:true, labels:{color:textColor(), font:{family:'Poppins', size:11}}},
+          tooltip:{ callbacks:{
+            label:function(ctx){
+              var valor = ctx.parsed.y == null ? 0 : ctx.parsed.y;
+              return ctx.dataset.label + ': ' + valor.toLocaleString('pt-BR');
+            }
+          } }
+        },
+        scales:{
+          x:{ ticks:{color:textColor(), font:{family:'Poppins', size:10}}, grid:{display:false} },
+          yRetornosDia:{
+            type:'linear', position:'left', beginAtZero:true,
+            title:{display:true, text:'Retornos (movimentações)', color:textColor()},
+            ticks:{color:textColor(), font:{family:'Poppins', size:10}, precision:0},
+            grid:{color:gridColor()}
+          },
+          yPecasDia:{
+            type:'linear', position:'right', beginAtZero:true,
+            title:{display:true, text:'Peças (unidades)', color:textColor()},
+            ticks:{color:textColor(), font:{family:'Poppins', size:10}, precision:0},
+            grid:{drawOnChartArea:false}
+          }
+        }
+      })
     });
 
     /* ---- Retornos por turno (ocorrências) ---- */
