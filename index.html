@@ -1383,7 +1383,7 @@
   <footer>
     SESÉ · Controle de Materiais de Retorno de Linha · Uso interno
     <span class="developer-credit">Desenvolvida por Ivan Carlos Antoneli</span>
-    <span class="document-control">Classe 10.4 | F-05BR-SCA-232 | Controle de Materiais e Retorno de Linha REV.01 | 20/08/2026</span>
+    <span class="document-control">KSU Classe 10.4 | F-05BR-SCA-232 | Data de emissão 20/08/2026 | REV.0 20/08/2026</span>
   </footer>
 </div>
 
@@ -1834,12 +1834,7 @@ function CMRL_initDashboard(){
       + '.pg img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}'
       + '</style></head><body>'
       + urls.map(function(u){ return '<div class="pg"><img src="'+u+'"></div>'; }).join('')
-      + '
-<div class="document-control-fixed" role="contentinfo" aria-label="Controle documental">
-  Classe 10.4 | F-05BR-SCA-232 | Controle de Materiais e Retorno de Linha REV.01 | 20/08/2026
-</div>
-
-</body></html>';
+      + '</body></html>';
     var ifr = document.createElement('iframe');
     ifr.setAttribute('aria-hidden','true');
     ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
@@ -4808,5 +4803,8 @@ function baixarXlsx(wb, nomeArquivo){
 })();
 </script>
 
+<div class="document-control-fixed" role="contentinfo" aria-label="Controle documental">
+  KSU Classe 10.4 | F-05BR-SCA-232 | Data de emissão 20/08/2026 | REV.0 20/08/2026
+</div>
 </body>
 </html>
