@@ -421,6 +421,9 @@
     color:var(--txt-faint);letter-spacing:1.5px;text-transform:uppercase}
   footer .developer-credit{display:block;margin-top:7px;font-size:10px;letter-spacing:.4px;
     text-transform:none;color:var(--txt-dim)}
+  footer .document-control{display:block;margin-top:9px;padding-top:9px;border-top:1px solid var(--line-soft);
+    font-size:10px;line-height:1.6;letter-spacing:.65px;text-transform:none;color:var(--txt-dim)}
+  @media(max-width:600px){footer .document-control{font-size:9px;letter-spacing:.25px}}
 
   /* ---- Tabs ---- */
   .tabs{display:flex;gap:4px;margin-bottom:18px;flex-wrap:wrap;position:relative}
@@ -766,6 +769,53 @@
     .code-suggest .item{padding:11px 12px}
   }
 </style>
+
+<style id="cmrl-document-control-fixed-style">
+  /* Controle documental sempre visível na parte inferior da ferramenta */
+  body{padding-bottom:100px !important;}
+  .document-control-fixed{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:9000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:38px;
+    padding:8px 14px calc(8px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);
+    background:var(--panel);
+    color:var(--txt-dim);
+    font-family:'Poppins',sans-serif;
+    font-size:10.5px;
+    font-weight:600;
+    line-height:1.4;
+    letter-spacing:.45px;
+    text-align:center;
+    box-shadow:0 -8px 24px rgba(0,0,0,.18);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  [data-theme="light"] .document-control-fixed{
+    background:rgba(255,255,255,.96);
+    color:#3a5f83;
+  }
+  @media(max-width:600px){
+    body{padding-bottom:118px !important;}
+    .document-control-fixed{
+      min-height:48px;
+      padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+      font-size:9px;
+      letter-spacing:.15px;
+    }
+  }
+  @media print{
+    .document-control-fixed{display:none !important;}
+    body{padding-bottom:0 !important;}
+  }
+</style>
+
 </head>
 <body>
 <div id="fb-loading-overlay" style="position:fixed;inset:0;z-index:9999;background:var(--bg,#0b0d10);
@@ -1333,6 +1383,7 @@
   <footer>
     SESÉ · Controle de Materiais de Retorno de Linha · Uso interno
     <span class="developer-credit">Desenvolvida por Ivan Carlos Antoneli</span>
+    <span class="document-control">Classe 10.4 | F-05BR-SCA-232 | Controle de Materiais e Retorno de Linha REV.01 | 20/08/2026</span>
   </footer>
 </div>
 
@@ -1783,7 +1834,12 @@ function CMRL_initDashboard(){
       + '.pg img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}'
       + '</style></head><body>'
       + urls.map(function(u){ return '<div class="pg"><img src="'+u+'"></div>'; }).join('')
-      + '</body></html>';
+      + '
+<div class="document-control-fixed" role="contentinfo" aria-label="Controle documental">
+  Classe 10.4 | F-05BR-SCA-232 | Controle de Materiais e Retorno de Linha REV.01 | 20/08/2026
+</div>
+
+</body></html>';
     var ifr = document.createElement('iframe');
     ifr.setAttribute('aria-hidden','true');
     ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
