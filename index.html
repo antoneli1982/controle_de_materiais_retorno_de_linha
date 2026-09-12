@@ -1158,6 +1158,13 @@ body.apostila-open{overflow:hidden}
   </div><!-- /view-apontamento -->
 
   <div class="view" id="view-dashboard">
+    <div class="panel" id="cmrl-arq-box" style="margin:16px 0">
+      <div class="panel-head"><span class="tag">ARQUIVO</span><h2>Pastas de períodos</h2></div>
+      <p>Os ZIPs exportados ficam organizados por período neste navegador.</p>
+      <select id="cmrl-arq-periodos" style="min-width:260px"><option value="">Nenhum período arquivado</option></select>
+      <button type="button" class="btn-ghost primary" id="cmrl-arq-comparar">Comparar com o período anterior</button>
+      <div id="cmrl-arq-resultado" style="margin-top:10px"></div>
+    </div>
     <div class="dash-kpis" id="dash-kpis"></div>
 
     <div class="panel dash-relatorio-panel" style="margin-bottom:16px">
@@ -3488,10 +3495,25 @@ function CMRL_initRegistros(){
       var payload = {versao:1, exportadoEm:new Date().toISOString(), registros:registros};
       var bytes = utf8(JSON.stringify(payload));
       var zip = zipStore([{name:'controle-materiais.json', data:bytes}]);
-      var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([zip],{type:'application/zip'}));
+      var zipBlob = new Blob([zip],{type:'application/zip'});
+      guardarArquivoPeriodo(zipBlob, payload);
+      var a=document.createElement('a'); a.href=URL.createObjectURL(zipBlob);
       a.download='controle-materiais-backup.zip'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
     }catch(e){ alert('Não foi possível exportar o backup: '+(e.message||e)); }
   });
+
+  /* Arquivo de períodos: ZIPs ficam no IndexedDB, sem sobrecarregar o localStorage. */
+  var ARQ_DB='cmrl-arquivo-periodos', ARQ_STORE='zips';
+  function abrirArquivoDB(){ return new Promise(function(ok,no){ var r=indexedDB.open(ARQ_DB,1); r.onupgradeneeded=function(){r.result.createObjectStore(ARQ_STORE,{keyPath:'id',autoIncrement:true});}; r.onsuccess=function(){ok(r.result)}; r.onerror=function(){no(r.error)}; }); }
+  function resumoPeriodo(lista){ return {registros:lista.length, pecas:lista.reduce(function(s,r){return s+(+r.qtd||0)},0), hu:lista.filter(function(r){return r.hu===true}).length, ot:lista.filter(function(r){return r.ot===true}).length, fotos:lista.reduce(function(s,r){return s+(r.fotoPeca?1:0)+(r.fotoEtiqueta?1:0)},0)}; }
+  function guardarArquivoPeriodo(blob,payload){ var p=prompt('Nome do período para este arquivo ZIP (ex.: Setembro/2026):',(payload.registros[0]&&payload.registros[0].data)||new Date().toISOString().slice(0,10)); if(p===null)return; abrirArquivoDB().then(function(db){var tx=db.transaction(ARQ_STORE,'readwrite'); tx.objectStore(ARQ_STORE).add({periodo:p.trim()||'Sem período', criadoEm:Date.now(), blob:blob, resumo:resumoPeriodo(payload.registros)}); tx.oncomplete=function(){atualizarArquivoUI();}; }).catch(function(){}); }
+  function listarArquivos(){ return abrirArquivoDB().then(function(db){return new Promise(function(ok,no){var a=[],r=db.transaction(ARQ_STORE).objectStore(ARQ_STORE).openCursor();r.onsuccess=function(e){var c=e.target.result;if(c){a.push(c.value);c.continue();}else ok(a.sort(function(x,y){return y.criadoEm-x.criadoEm;}));};r.onerror=function(){no(r.error)};});}); }
+  function atualizarArquivoUI(){var s=document.getElementById('cmrl-arq-periodos');if(!s)return; listarArquivos().then(function(a){s.innerHTML='<option value="">Selecione um período</option>'+a.map(function(x){return '<option value="'+x.id+'">'+(x.periodo||'sem data')+' — '+new Date(x.criadoEm).toLocaleString()+'</option>';}).join('');});}
+  function montarArquivoUI(){
+    if(!document.getElementById('cmrl-arq-box'))return; atualizarArquivoUI();
+    document.getElementById('cmrl-arq-comparar').onclick=function(){listarArquivos().then(function(a){var id=+document.getElementById('cmrl-arq-periodos').value, i=a.findIndex(function(x){return x.id===id;});if(i<0||!a[i+1]){document.getElementById('cmrl-arq-resultado').textContent='É necessário ter pelo menos dois períodos arquivados.';return;}var x=a[i].resumo,y=a[i+1].resumo;document.getElementById('cmrl-arq-resultado').innerHTML='<b>'+a[i].periodo+' × '+a[i+1].periodo+'</b><br>Registros: '+x.registros+' ('+(x.registros-y.registros>=0?'+':'')+(x.registros-y.registros)+') · Peças: '+x.pecas+' ('+(x.pecas-y.pecas>=0?'+':'')+(x.pecas-y.pecas)+') · HU: '+x.hu+' · OT: '+x.ot+' · Fotos: '+x.fotos;});};
+  }
+  setTimeout(montarArquivoUI,700);
 
   /* Importa ZIPs gerados pelo sistema (formato ZIP sem compressão, compatível). */
   document.getElementById('reg-zip-import').addEventListener('change', function(e){
