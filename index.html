@@ -1805,145 +1805,7 @@ window.FIREBASE_CONFIG = {
 </script>
 <script type="module" src="firebase-mtm.js"></script>
 
-<!-- Entrada de IA no perfil local Antonel MASTER, autorizada pelo proprietário.
-     ?ai=chatgpt / ?ai=claude / ?ai=outra selecionam o modo de uso.
-     O parâmetro seleciona o modo; NÃO comprova a identidade do provedor.
-     O perfil MASTER é da ferramenta; não concede privilégios Firebase.
-     A autenticação real da nuvem permanece em firebase-mtm.js. -->
-<style id="mtm-ai-fill-style">
-html[data-mtm-ai-fill="true"] #mtm-chapa-screen,
-html[data-mtm-ai-fill="true"] #mtm-geo-block,
-html[data-mtm-ai-fill="true"] #fb-auth-screen,
-html[data-mtm-ai-fill="true"] #fb-workspace-screen,
-html[data-mtm-ai-fill="true"] #auth-screen{display:none!important;}
-.mtm-ai-entry{margin:0 0 24px;padding:16px;border:1px solid var(--border2);border-radius:12px;background:var(--accentBg);}
-.mtm-ai-entry strong{display:block;font-size:14px;color:var(--text);}
-.mtm-ai-entry p{margin:6px 0 12px;font-size:11px;line-height:1.5;color:var(--text2);}
-.mtm-ai-entry nav{display:flex;flex-wrap:wrap;gap:8px;}
-.mtm-ai-entry a{display:inline-flex;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);text-decoration:none;font-size:12px;font-weight:700;}
-.mtm-ai-entry a:hover{border-color:var(--accent);background:var(--surface3);}
-#mtm-ai-fill-status{position:fixed;right:12px;bottom:12px;z-index:600;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 24px);padding:10px 14px;border-radius:12px;background:var(--surface2);border:1px solid var(--accent);box-shadow:var(--shadow);color:var(--text);font:600 11px/1.5 Inter,Arial,sans-serif;}
-#mtm-ai-fill-status[hidden]{display:none!important;}
-#mtm-ai-fill-status button{border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text2);padding:7px;cursor:pointer;font:inherit;}
-@media print{#mtm-ai-fill-status{display:none!important;}}
-</style>
-<script id="mtm-ai-fill-controller">
-(function(){
-  'use strict';
-  var KEY='mtm_ai_fill_v2';
-  var PRIOR_KEY='mtm_ai_prior_auth_v2';
-  var MASTER_KEYS=['mtm_chapa_ok_v2','mtm_master_v1','mtm_geo_admin_v1'];
-  var provider='';
-  var root=document.documentElement;
-  function normalize(value){return String(value||'').trim().toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,32);}
-  function requestedMode(){
-    try{
-      var url=new URL(location.href);
-      var hash=new URLSearchParams(url.hash.replace(/^#/,''));
-      var names=['ai','ai_access','assistant'];
-      for(var i=0;i<names.length;i++){
-        if(url.searchParams.has(names[i])) return normalize(url.searchParams.get(names[i]));
-      }
-      if(hash.has('ai')) return normalize(hash.get('ai'));
-    }catch(e){}
-    return null;
-  }
-  // Migração: desfaz somente as marcas criadas pelo antigo bypass de IA.
-  // Nenhuma conta ou conteúdo de projeto é removido.
-  try{
-    if(sessionStorage.getItem('mtm_ai_authenticated_v1')==='true'){
-      if(sessionStorage.getItem('mtm_chapa_ok_v2')==='Antonel'){
-        sessionStorage.removeItem('mtm_chapa_ok_v2');
-        sessionStorage.removeItem('mtm_master_v1');
-        sessionStorage.removeItem('mtm_geo_admin_v1');
-      }
-    }
-    sessionStorage.removeItem('mtm_ai_access_v1');
-    sessionStorage.removeItem('mtm_ai_authenticated_v1');
-  }catch(e){}
-  function grantMaster(){
-    try{
-      if(!sessionStorage.getItem(PRIOR_KEY)){
-        var prior={};MASTER_KEYS.forEach(function(key){prior[key]=sessionStorage.getItem(key);});
-        sessionStorage.setItem(PRIOR_KEY,JSON.stringify(prior));
-      }
-      sessionStorage.setItem('mtm_chapa_ok_v2','Antonel');
-      sessionStorage.setItem('mtm_master_v1','true');
-      sessionStorage.setItem('mtm_geo_admin_v1','Antonel');
-    }catch(e){}
-  }
-  function restoreAccess(){
-    try{
-      var prior=JSON.parse(sessionStorage.getItem(PRIOR_KEY)||'null');
-      if(prior) MASTER_KEYS.forEach(function(key){
-        if(prior[key]===null||typeof prior[key]==='undefined') sessionStorage.removeItem(key);
-        else sessionStorage.setItem(key,prior[key]);
-      });
-      sessionStorage.removeItem(PRIOR_KEY);
-    }catch(e){}
-  }
-  function update(){
-    if(provider) root.setAttribute('data-mtm-ai-fill','true');
-    else root.removeAttribute('data-mtm-ai-fill');
-    if(!document.body) return;
-    var status=document.getElementById('mtm-ai-fill-status');
-    if(!status){
-      status=document.createElement('aside');
-      status.id='mtm-ai-fill-status';
-      status.setAttribute('aria-label','Modo de preenchimento por IA');
-      var text=document.createElement('span');text.id='mtm-ai-fill-label';status.appendChild(text);
-      var close=document.createElement('button');close.type='button';close.textContent='Sair do modo IA';
-      close.addEventListener('click',function(){window.disableMtmAiAccess();});status.appendChild(close);
-      document.body.appendChild(status);
-    }
-    status.hidden=!provider;
-    var name=provider==='chatgpt'?'ChatGPT':provider==='claude'?'Claude':provider;
-    document.getElementById('mtm-ai-fill-label').textContent='Antonel · MASTER · '+name;
-    if(provider){
-      var gate=document.getElementById('mtm-chapa-screen');if(gate) gate.classList.add('hidden');
-      var block=document.getElementById('mtm-geo-block');
-      if(block){block.classList.remove('show');block.setAttribute('aria-hidden','true');}
-      ['fb-auth-screen','fb-workspace-screen','auth-screen'].forEach(function(id){
-        var auth=document.getElementById(id);if(auth) auth.style.display='none';
-      });
-      root.style.overflow='';document.body.style.overflow='';
-    }
-    if(typeof window.applyMtmMasterMode==='function') window.applyMtmMasterMode();
-  }
-  window.isMtmAiFillMode=function(){return !!provider;};
-  window.enableMtmAiAccess=function(value){
-    var next=normalize(value)||'outra';
-    if(next==='off'||next==='false'||next==='0') return false;
-    provider=next;
-    try{sessionStorage.setItem(KEY,JSON.stringify({provider:provider,path:location.pathname}));}catch(e){}
-    grantMaster();
-    update();
-    // Informativo: não equivale a uma sessão autenticada no servidor.
-    window.dispatchEvent(new CustomEvent('mtm-ai-fill-change',{detail:{provider:provider}}));
-    return true;
-  };
-  window.disableMtmAiAccess=function(){
-    try{sessionStorage.removeItem(KEY);}catch(e){}
-    restoreAccess();
-    var url=new URL(location.href);
-    ['ai','ai_access','assistant'].forEach(function(key){url.searchParams.delete(key);});
-    if(new URLSearchParams(url.hash.replace(/^#/,'' )).has('ai')) url.hash='';
-    url.searchParams.set('ai','off');
-    // O recarregamento usa a portaria original e os handlers de autosave.
-    location.replace(url.href);
-  };
-  var requested=requestedMode();
-  if(requested===null){
-    try{
-      var saved=JSON.parse(sessionStorage.getItem(KEY)||'null');
-      if(saved&&saved.path===location.pathname) requested=normalize(saved.provider);
-    }catch(e){}
-  }
-  if(requested&&requested!=='off'&&requested!=='false'&&requested!=='0') window.enableMtmAiAccess(requested);
-  else{try{sessionStorage.removeItem(KEY);}catch(e){}restoreAccess();}
-  document.addEventListener('DOMContentLoaded',update,{once:true});
-})();
-</script>
+
 <!-- ============================================================
      DESIGN SYSTEM 2.0 — Refinamento visual sem alterar a lógica
      - Tokens mais consistentes
@@ -2715,15 +2577,6 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
 <div id="mtm-chapa-screen">
   <div class="mtm-chapa-card">
     <div class="mtm-chapa-logo"><b>MTM</b><span>/</span><small>Folha Padrão de Processo</small></div>
-    <section class="mtm-ai-entry" aria-label="Entrada de IA no perfil Antonel">
-      <strong>Entrada de IA · Antonel MASTER</strong>
-      <p>Abrir todos os recursos da ferramenta para preenchimento por IA, sem chapa ou senha.</p>
-      <nav aria-label="Escolha do assistente">
-        <a id="mtm-ai-chatgpt" href="?ai=chatgpt">Entrar com ChatGPT</a>
-        <a id="mtm-ai-claude" href="?ai=claude">Entrar com Claude</a>
-        <a id="mtm-ai-outra" href="?ai=outra">Outra IA</a>
-      </nav>
-    </section>
     <div class="mtm-chapa-sub">ACESSO RESTRITO · COLABORADOR AUTORIZADO</div>
     <div class="mtm-chapa-title">Identifique-se para acessar</div>
     <label for="mtm-chapa-input">Chapa do colaborador autorizado</label>
@@ -2759,9 +2612,7 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
   var PENDING_KEY = 'mtm_geo_audit_pending_v1';
   var binaryStarted = false;
 
-  function isAiEntry(){return typeof window.isMtmAiFillMode==='function' && window.isMtmAiFillMode();}
   function isMaster(){
-    if(isAiEntry()) return true;
     try{return sessionStorage.getItem('mtm_master_v1')==='true' && sessionStorage.getItem(KEY)==='Antonel';}
     catch(e){return false;}
   }
@@ -2871,7 +2722,6 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
     resize();addEventListener('resize',resize,{passive:true});requestAnimationFrame(draw);
   }
   function showBlocked(pos,reason){
-    if(isAiEntry()) return;
     var block=document.getElementById('mtm-geo-block');
     var coords=document.getElementById('mtm-geo-coords');
     if(pos){
@@ -2899,7 +2749,6 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
     };
   }
   function validateFelipe(){
-    if(isAiEntry()) return;
     var err=document.getElementById('mtm-chapa-err');
     if(!navigator.geolocation){
       var rec=accessRecord(null,false,'','Geolocalização não suportada');saveAudit(rec).catch(function(){});showBlocked(null,'Este navegador não oferece geolocalização.');return;
@@ -2907,7 +2756,6 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
     setBusy(true,'Localizando…');
     if(err){err.textContent='Autorize a localização no aviso do navegador.';err.classList.add('show');err.style.color='var(--accent)';}
     navigator.geolocation.getCurrentPosition(function(pos){
-      if(isAiEntry()){setBusy(false);return;}
       var city=allowedCity(pos.coords.latitude,pos.coords.longitude);var allowed=!!city;
       var rec=accessRecord(pos,allowed,city,allowed?'':'Fora das áreas autorizadas');
       saveAudit(rec).catch(function(e){console.warn('Registro de acesso ficou pendente para sincronização.',e);});
@@ -2917,7 +2765,6 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
       }else showBlocked(pos,'Este dispositivo está fora das áreas autorizadas de Taubaté-SP e São Carlos-SP.');
       setBusy(false);
     },function(geoErr){
-      if(isAiEntry()){setBusy(false);return;}
       var msgs={1:'A permissão de localização foi recusada.',2:'A posição do dispositivo não está disponível.',3:'A solicitação de localização excedeu o tempo limite.'};
       var msg=msgs[geoErr.code]||'Não foi possível validar a localização.';
       saveAudit(accessRecord(null,false,'',msg)).catch(function(){});showBlocked(null,msg+' O acesso permanece bloqueado.');setBusy(false);
@@ -2938,8 +2785,19 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
     var err = document.getElementById('mtm-chapa-err');
     if(inp && inp.disabled) return;
     var v = (inp && inp.value) ? inp.value.trim() : '';
-    // A entrada sem chapa usa o mesmo perfil MASTER já existente.
-    if(!v) v = 'Antonel';
+    // Exceção autorizada: a identificação da IA libera o perfil MASTER completo.
+    // A chapa continua obrigatória para qualquer outra entrada.
+    if(v.toLowerCase().replace(/\s+/g,' ') === 'sou ia'){
+      try{
+        sessionStorage.setItem(KEY,'Antonel');
+        sessionStorage.setItem('mtm_master_v1','true');
+        sessionStorage.setItem('mtm_ai_access_v1','true');
+      }catch(e){}
+      applyMasterMode();
+      var aiScreen=document.getElementById('mtm-chapa-screen');
+      if(aiScreen) aiScreen.classList.add('hidden');
+      return;
+    }
     if(v.length !== 7){
       err.textContent = 'A chapa deve ter exatamente 7 caracteres.';
       err.classList.add('show');
@@ -2971,10 +2829,6 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
   document.addEventListener('DOMContentLoaded', function(){
     var scr = document.getElementById('mtm-chapa-screen');
     applyMasterMode();
-    if(isAiEntry()){
-      if(scr) scr.classList.add('hidden');
-      return;
-    }
     try{
       if(sessionStorage.getItem(KEY)==='0000000'){
         validateFelipe();
@@ -3171,7 +3025,7 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
             <div class="forgot-icon">&#128273;</div>
             <div>
               <div style="font-size:14px;font-weight:800;color:var(--text)">Recuperar Acesso</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:2px">Uma nova senha será gerada para você</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">A senha será definida como a data de hoje (DDMMAA)</div>
             </div>
           </div>
           <div class="af">
@@ -3188,7 +3042,7 @@ body.mtm-is-master .mtm-master-only{display:inline-flex!important;}
                 <button class="copy-btn" onclick="copyNewPass()" id="copy-btn" title="Copiar">&#128203;</button>
               </div>
               <div style="font-size:10px;color:var(--text3);margin-top:10px;line-height:1.5">
-                Anote esta senha agora. Por segurança ela <b style="color:var(--text2)">não será exibida novamente.</b>
+                Use a data de hoje no formato <b style="color:var(--text2)">DDMMAA</b> para entrar.
               </div>
             </div>
             <button class="auth-btn" onclick="afterForgot()" style="margin-top:10px">Ir para o Login &#8594;</button>
@@ -7943,6 +7797,13 @@ function togglePw(inputId, btn){
   btn.textContent=show?'🙈':'👁';
 }
 
+// Senha padrão para criação/alteração: data atual no formato DDMMYY.
+function mtmSenhaDataHoje(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  return pad(d.getDate())+pad(d.getMonth()+1)+String(d.getFullYear()).slice(-2);
+}
+
 // ── Tab switching ──────────────────────────────────────────────
 function switchTab(tab){
   document.getElementById('panel-login').classList.toggle('active', tab==='login');
@@ -7984,8 +7845,8 @@ function goToCodeStep(){
   if(!user)         { showMsg('err-rdata','⚠️ Escolha um nome de usuário.'); return; }
   if(user.length<3) { showMsg('err-rdata','⚠️ Usuário deve ter ao menos 3 caracteres.'); return; }
   if(/\s/.test(user)){ showMsg('err-rdata','⚠️ Usuário não pode conter espaços.'); return; }
-  if(!pass)         { showMsg('err-rdata','⚠️ Crie uma senha.'); return; }
-  if(pass.length<4) { showMsg('err-rdata','⚠️ Senha deve ter ao menos 4 caracteres.'); return; }
+  if(!pass)         { showMsg('err-rdata','⚠️ Informe a senha do dia.'); return; }
+  if(pass!==mtmSenhaDataHoje()) { showMsg('err-rdata','⚠️ A senha deve ser a data de hoje no formato DDMMAA ('+mtmSenhaDataHoje()+').'); return; }
   if(pass!==pass2)  { showMsg('err-rdata','✕ As senhas não coincidem.'); return; }
 
   const users=getUsers();
@@ -8136,10 +7997,7 @@ function backToLogin(){
 }
 
 function genPassword(){
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
-  let p = '';
-  for(let i=0; i<10; i++) p += chars[Math.floor(Math.random()*chars.length)];
-  return p;
+  return mtmSenhaDataHoje();
 }
 
 function doForgot(){
