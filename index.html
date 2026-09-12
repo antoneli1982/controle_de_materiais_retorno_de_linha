@@ -1127,6 +1127,8 @@ body.apostila-open{overflow:hidden}
         <span style="flex:1"></span>
         <label class="file-label">⬆ Importar Excel<input type="file" id="reg-import" accept=".xlsx,.xls,.csv" style="display:none"></label>
         <button type="button" class="btn-ghost primary" id="btn-xlsx">⬇ Exportar Excel</button>
+        <button type="button" class="btn-ghost primary" id="btn-zip-export">⬇ Exportar ZIP (backup)</button>
+        <label class="file-label">⬆ Importar ZIP<input type="file" id="reg-zip-import" accept=".zip" style="display:none"></label>
         <button type="button" class="btn-ghost danger" id="btn-clear-all">Apagar tudo</button>
       </div>
       <div class="table-scroll">
@@ -2771,6 +2773,18 @@ function CMRL_initRegistros(){
   }
   var registros = loadAll();
 
+  /* Recompacta fotos antigas automaticamente (uma vez por registro). */
+  (function compactarFotosExistentes(){
+    var alterou = false, tarefas = [];
+    registros.forEach(function(r){ ['fotoPeca','fotoEtiqueta'].forEach(function(c){
+      if(!r[c] || !/^data:image\//.test(r[c])) return;
+      tarefas.push(fetch(r[c]).then(function(x){ return x.blob(); }).then(function(b){
+        return comprimirImagem(b).then(function(n){ if(n.dataUrl.length < r[c].length){ r[c]=n.dataUrl; alterou=true; } });
+      }).catch(function(){}));
+    }); });
+    if(tarefas.length) Promise.all(tarefas).then(function(){ if(alterou) saveAll(registros); });
+  })();
+
   window.CMRL_setRegistros = function(list){
     registros = list;
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
@@ -3466,6 +3480,37 @@ function CMRL_initRegistros(){
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Retorno de Linha');
     baixarXlsx(wb, 'controle_materiais_retorno_linha.xlsx');
+  });
+
+  /* Backup completo em ZIP (registros + fotos já comprimidas). */
+  document.getElementById('btn-zip-export').addEventListener('click', function(){
+    try{
+      var payload = {versao:1, exportadoEm:new Date().toISOString(), registros:registros};
+      var bytes = utf8(JSON.stringify(payload));
+      var zip = zipStore([{name:'controle-materiais.json', data:bytes}]);
+      var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([zip],{type:'application/zip'}));
+      a.download='controle-materiais-backup.zip'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+    }catch(e){ alert('Não foi possível exportar o backup: '+(e.message||e)); }
+  });
+
+  /* Importa ZIPs gerados pelo sistema (formato ZIP sem compressão, compatível). */
+  document.getElementById('reg-zip-import').addEventListener('change', function(e){
+    var file=e.target.files[0]; if(!file) return;
+    file.arrayBuffer().then(function(buf){
+      var u=new Uint8Array(buf), p=0, json=null;
+      function u16(i){return u[i]|(u[i+1]<<8);} function u32(i){return (u[i]|(u[i+1]<<8)|(u[i+2]<<16)|(u[i+3]<<24))>>>0;}
+      while(p+30<=u.length && u32(p)===0x04034b50){
+        var n=u16(p+26), ex=u16(p+28), size=u32(p+18), start=p+30+n+ex;
+        if(start+size>u.length) break;
+        var name=new TextDecoder().decode(u.slice(p+30,p+30+n));
+        if(name==='controle-materiais.json') json=new TextDecoder().decode(u.slice(start,start+size));
+        p=start+size;
+      }
+      if(!json) throw new Error('Arquivo ZIP inválido ou incompatível.');
+      var obj=JSON.parse(json), lista=Array.isArray(obj)?obj:obj.registros;
+      if(!Array.isArray(lista)) throw new Error('Backup sem registros.');
+      registros=lista; saveAll(registros); render(); alert('Backup importado com sucesso ('+lista.length+' registros).');
+    }).catch(function(err){ alert('Falha ao importar ZIP: '+(err.message||err)); }).then(function(){e.target.value='';});
   });
 
   /* ---- Importar Excel (registros) ---- */
