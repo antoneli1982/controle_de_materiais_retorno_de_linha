@@ -51,9 +51,8 @@
     });
   }
   window.CMRL_firebaseSDKReady=load('app').then(function(){
-    window.CMRL_storageSDKReady=load('storage');
-    window.CMRL_storageSDKReady.catch(function(){});
-    return Promise.all([load('auth'),load('database')]);
+    /* Storage desativado: o plano gratuito (Spark) não inclui Cloud Storage. Fotos e ZIPs ficam no Realtime Database. */
+    return load('database');
   });
   window.CMRL_firebaseSDKReady.catch(function(){});
 })();
@@ -837,6 +836,16 @@ body.apostila-open{overflow:hidden}
       <button type="button" id="fb-retry" style="padding:10px 14px;border:1px solid #2877aa;border-radius:7px;background:#0c3150;color:#edf7ff;cursor:pointer;font:inherit">Tentar conectar novamente</button>
       <a href="https://console.firebase.google.com/project/controlmaterials/settings/general" target="_blank" rel="noopener noreferrer" style="color:var(--txt,#edf7ff);text-decoration:underline">Abrir configurações do Firebase</a>
     </div>
+    <details id="fb-config-box" hidden style="margin-top:14px">
+      <summary style="cursor:pointer;font-weight:bold">Atualizar a chave do Firebase (colar firebaseConfig)</summary>
+      <p style="margin:8px 0">No Firebase Console: ⚙ Configurações do projeto → Geral → Seus apps → app Web → <b>Config</b>. Copie o bloco <code>const firebaseConfig = { ... }</code> inteiro e cole abaixo. A configuração fica salva neste navegador.</p>
+      <textarea id="fb-config-input" rows="8" spellcheck="false" placeholder="const firebaseConfig = {&#10;  apiKey: &quot;AIza...&quot;,&#10;  authDomain: &quot;controlmaterials.firebaseapp.com&quot;,&#10;  ...&#10;};" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #2877aa;border-radius:7px;background:#06182a;color:#edf7ff;font:12px/1.5 Consolas,monospace"></textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <button type="button" id="fb-config-save" style="padding:10px 14px;border:1px solid #2f9a5b;border-radius:7px;background:#0d3a22;color:#edf7ff;cursor:pointer;font:inherit">Salvar e conectar</button>
+        <button type="button" id="fb-config-reset" style="padding:10px 14px;border:1px solid #666;border-radius:7px;background:transparent;color:var(--txt,#edf7ff);cursor:pointer;font:inherit">Voltar à configuração do arquivo</button>
+        <span id="fb-config-current" style="opacity:.75;font-size:12px"></span>
+      </div>
+    </details>
   </aside>
   <header>
     <div class="brand">
@@ -3800,6 +3809,37 @@ function CMRL_initRegistros(){
     messagingSenderId: '231845500854',
     appId: '1:231845500854:web:a49b5a4453d0c00dde1317'
   };
+  var CONFIG_KEY='cmrl-firebase-config', fileConfig=Object.assign({},config), usingSavedConfig=false;
+  try{
+    var savedConfig=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');
+    if(savedConfig && savedConfig.apiKey && savedConfig.projectId){config=Object.assign({},config,savedConfig);usingSavedConfig=true;}
+  }catch(e){}
+  function parseConfig(text){
+    var out={}, re=/(apiKey|authDomain|databaseURL|projectId|storageBucket|messagingSenderId|appId|measurementId)["']?\s*:\s*["'`]([^"'`]+)["'`]/g, m;
+    while((m=re.exec(String(text||''))))out[m[1]]=m[2].trim();
+    return out;
+  }
+  function setupConfigBox(open){
+    var box=document.getElementById('fb-config-box');
+    if(!box)return;
+    box.hidden=false; if(open)box.open=true;
+    var cur=document.getElementById('fb-config-current');
+    if(cur)cur.textContent=(usingSavedConfig?'Em uso: configuração salva neste navegador':'Em uso: configuração do arquivo')+' · chave …'+String(config.apiKey||'').slice(-6);
+  }
+  (function(){
+    var save=document.getElementById('fb-config-save'), reset=document.getElementById('fb-config-reset');
+    if(save)save.addEventListener('click',function(){
+      var parsed=parseConfig(document.getElementById('fb-config-input').value);
+      if(!/^AIza[0-9A-Za-z_\-]{35}$/.test(parsed.apiKey||'')){alert('Não encontrei uma apiKey válida (começa com "AIza" e tem 39 caracteres). Cole o bloco firebaseConfig completo.');return;}
+      if(!parsed.projectId){alert('Não encontrei o projectId. Cole o bloco firebaseConfig completo.');return;}
+      if(parsed.projectId!==fileConfig.projectId && !confirm('Este bloco é do projeto "'+parsed.projectId+'", diferente de "'+fileConfig.projectId+'". Os registros ficarão em outro banco de dados. Continuar?'))return;
+      var merged=parsed.projectId===fileConfig.projectId?Object.assign({},fileConfig,parsed):parsed;
+      if(!merged.databaseURL)merged.databaseURL='https://'+merged.projectId+'-default-rtdb.firebaseio.com';
+      try{localStorage.setItem(CONFIG_KEY,JSON.stringify(merged));}catch(e){alert('O navegador bloqueou o salvamento local. Atualize a apiKey diretamente no arquivo HTML.');return;}
+      location.reload();
+    });
+    if(reset)reset.addEventListener('click',function(){try{localStorage.removeItem(CONFIG_KEY);}catch(e){}location.reload();});
+  })();
   var db, storage, recordsRef, materialsRef, prefsRef, archivesRef;
   var started = false, ready = false, applying = false, recordCache = {}, materialCache = {};
   var cancelled = false, connectionTimer, phase = 'Carregando Firebase';
@@ -3836,9 +3876,9 @@ function CMRL_initRegistros(){
       'auth/unauthorized-domain':'Autorize o domínio usado para abrir o sistema nas configurações do Authentication.',
       'auth/operation-not-supported-in-this-environment':'Abra o HTML por um servidor local (ex.: localhost no XAMPP) ou por HTTPS.',
       'auth/network-request-failed':'Verifique a internet e a liberação dos serviços do Firebase na rede.',
-      'PERMISSION_DENIED':'Acesso negado ao Realtime Database. Confira as regras para o usuário autenticado e os caminhos do aplicativo.',
-      'permission_denied':'Acesso negado ao Realtime Database. Confira as regras para o usuário autenticado e os caminhos do aplicativo.',
-      'storage/unauthorized':'O Cloud Storage negou o envio de fotos/arquivos. Confira as permissões do usuário autenticado.',
+      'PERMISSION_DENIED':'O Realtime Database recusou o acesso. No Firebase Console → Realtime Database → Regras, cole {"rules":{".read":true,".write":true}} e clique em Publicar.',
+      'permission_denied':'O Realtime Database recusou o acesso. No Firebase Console → Realtime Database → Regras, cole {"rules":{".read":true,".write":true}} e clique em Publicar.',
+      'storage/unauthorized':'O Storage recusou a foto. No Firebase Console → Storage → Regras, troque a linha allow por: allow read, write: if true; e clique em Publicar.',
       'storage/bucket-not-found':'Confira se o bucket do Cloud Storage está configurado neste projeto.',
       'storage/retry-limit-exceeded':'O envio ao Cloud Storage demorou demais. Verifique a conexão e tente novamente.'
     };
@@ -3872,6 +3912,8 @@ function CMRL_initRegistros(){
       try{start();}catch(initError){console.error('[Interface]',initError);}
     }
     document.body.setAttribute('data-cmrl-readonly','1');
+    var errCode=String(e && e.code || '')+' '+String(e && e.message || '');
+    setupConfigBox(/api-key|invalid-api-key|API key/i.test(errCode));
     notice('Não foi possível conectar — consulta local',
       'Etapa: '+phase+'.\n'+describeError(e)+'\n\n'+
       (localRecords.length ? 'Exibindo '+localRecords.length+' registros da cópia deste navegador; eles podem estar desatualizados.' : 'Este navegador não possui uma cópia local de registros. Os dados do Firebase não foram apagados.')+
@@ -3901,6 +3943,8 @@ function CMRL_initRegistros(){
   function error(e){ console.error('[Firebase]',e); window.CMRL_FIREBASE_LAST_ERROR=e; status('🔴 Falha no Firebase',false,describeError(e)); notice('Operação não confirmada no Firebase',describeError(e)+'\nMantenha a página aberta e exporte um backup antes de tentar conectar novamente.'); }
   function start(){ if(started)return; started=true; var overlay=document.getElementById('fb-loading-overlay'); if(overlay)overlay.style.display='none'; CMRL_initCadastro(); CMRL_initDashboard(); CMRL_initRegistros(); }
   function uploadPhoto(record, field){
+    /* Sem Storage: a foto comprimida (poucos KB) fica gravada no próprio registro. */
+    return Promise.resolve(record);
     var photo=record[field];
     if(!photo || !/^data:image\//.test(photo))return Promise.resolve(record);
     return getStorage().then(function(store){
@@ -3919,27 +3963,39 @@ function CMRL_initRegistros(){
       getStorage().then(function(store){return store.refFromURL(old).delete();}).catch(function(e){console.warn('[Firebase] Foto antiga não removida:',e);});
     });
   }
-  function migrateRecords(list){
-    var chain=Promise.resolve();
+  /* Migração: só envia o que ainda NÃO existe no Firebase (comparado com a leitura já feita),
+     sem uma ida ao servidor por item. Antes, cada registro/material era consultado um a um a cada
+     abertura, e a barra de status ficava "subindo códigos" por minutos sem terminar. */
+  function migrateRecords(list, existing){
+    var pending=[], seen={};
     list.forEach(function(item){
       if(!item || item.id==null)return;
       var id=key(item.id);
-      chain=chain.then(function(){active();heartbeat('Migrando registro '+id);return recordsRef.child(id).once('value');}).then(function(s){
-        active();if(s.exists())return;
-        return prepareRecord(item).then(function(prepared){
-          active();return recordsRef.child(id).transaction(function(current){return current===null?prepared:undefined;},undefined,false);
+      if(existing[id] || seen[id])return;
+      seen[id]=1; pending.push({id:id,item:item});
+    });
+    var chain=Promise.resolve(), done=0;
+    pending.forEach(function(p){
+      chain=chain.then(function(){
+        active(); done++; heartbeat('Enviando registros pendentes ('+done+' de '+pending.length+')');
+        return prepareRecord(p.item).then(function(prepared){
+          active();return recordsRef.child(p.id).transaction(function(current){return current===null?prepared:undefined;},undefined,false);
         });
       });
     });
-    return chain;
+    return chain.then(function(){return pending.length;});
   }
-  function migrateMaterials(list){
-    var chain=Promise.resolve();
+  function migrateMaterials(list, existing){
+    var updates={}, n=0;
     list.forEach(function(item){
       if(!item || !item.codigo)return;
-      chain=chain.then(function(){active();heartbeat('Migrando material '+item.codigo);return materialsRef.child(key(item.codigo)).transaction(function(current){return current===null?item:undefined;},undefined,false);});
+      var id=key(item.codigo);
+      if(existing[id] || updates[id])return;
+      updates[id]=item; n++;
     });
-    return chain;
+    if(!n)return Promise.resolve(0);
+    active(); heartbeat('Enviando '+n+' materiais');
+    return materialsRef.update(updates).then(function(){return n;});
   }
   function applyRecords(snapshot){
     recordCache=snapshot.val()||{};
@@ -3986,50 +4042,68 @@ function CMRL_initRegistros(){
   window.CMRL_savePrefs=function(p){window.CMRL_initialPrefs=p;if(ready)prefsRef.set(p).then(function(){cacheLocal('cmrl-ocorrencia-prefs',p);}).catch(error);};
   window.CMRL_savePalettes=function(p){if(ready)db.ref('configuracoes/paletas').set(p).then(function(){cacheLocal('cmrl-chart-palettes',p);}).catch(error);};
   window.CMRL_saveTheme=function(theme){try{localStorage.setItem('cmrl-theme',theme);}catch(e){} if(ready)db.ref('configuracoes/tema').set(theme).catch(error);};
+  function blobToBase64(blob){
+    return new Promise(function(ok,no){var r=new FileReader();r.onload=function(){ok(String(r.result).split(',')[1]||'');};r.onerror=function(){no(r.error);};r.readAsDataURL(blob);});
+  }
+  function base64ToBlob(b64,type){
+    var bin=atob(b64), bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return new Blob([bytes],{type:type||'application/zip'});
+  }
   window.CMRL_saveArchive=function(blob, period, summary, archiveId){
     if(!ready)return Promise.reject(new Error('Firebase indisponível'));
     var id=archiveId || db.ref().push().key;
-    return getStorage().then(function(store){
-      var target=store.ref('arquivos-periodos/'+key(id)+'.zip');
-      return target.put(blob,{contentType:'application/zip'}).then(function(){return target.getDownloadURL();});
-    }).then(function(url){
-      return archivesRef.child(key(id)).set({id:id,periodo:period,criadoEm:Date.now(),resumo:summary,url:url});
+    return blobToBase64(blob).then(function(b64){
+      return archivesRef.child(key(id)).set({id:id,periodo:period,criadoEm:Date.now(),resumo:summary,dados:b64});
     });
   };
   window.CMRL_listArchives=function(){
     if(!ready)return Promise.resolve([]);
     return archivesRef.once('value').then(function(s){return values(s.val()).sort(function(a,b){return b.criadoEm-a.criadoEm;});}).then(function(items){
-      return Promise.all(items.map(function(x){return fetch(x.url).then(function(r){if(!r.ok)throw new Error('Falha ao baixar ZIP');return r.blob();}).then(function(blob){return Object.assign({},x,{blob:blob});});}));
+      return Promise.all(items.map(function(x){
+        if(x.dados){try{return Object.assign({},x,{blob:base64ToBlob(x.dados)});}catch(e){return null;}}
+        if(!x.url)return null;
+        return fetch(x.url).then(function(r){if(!r.ok)throw new Error('Falha ao baixar ZIP');return r.blob();}).then(function(blob){return Object.assign({},x,{blob:blob});}).catch(function(){return null;});
+      })).then(function(list){return list.filter(Boolean);});
     });
   };
   function connect(){
     heartbeat('Carregando Firebase');
     Promise.resolve(window.CMRL_firebaseSDKReady).then(function(){
       active();
-      if(typeof firebase==='undefined' || !firebase.auth || !firebase.database)throw new Error('As bibliotecas do Firebase não carregaram. Verifique a conexão.');
+      if(typeof firebase==='undefined' || !firebase.database)throw new Error('As bibliotecas do Firebase não carregaram. Verifique a conexão.');
       if(!firebase.apps.length)firebase.initializeApp(config);
       db=firebase.database();
       recordsRef=db.ref('registrosV2'); materialsRef=db.ref('materiaisV2'); prefsRef=db.ref('configuracoes/ocorrencias'); archivesRef=db.ref('arquivosV2');
-      heartbeat('Autenticando no Firebase');
-      return firebase.auth().signInAnonymously();
+      /* Modo aberto: sem login. O banco aceita gravação pelas regras públicas. */
     }).then(function(){
       active();heartbeat('Lendo Realtime Database');
-    return Promise.all([recordsRef.once('value'),materialsRef.once('value'),db.ref('registros').once('value'),db.ref('materiais').once('value'),prefsRef.once('value'),db.ref('meta/v2migrado').once('value'),db.ref('configuracoes/paletas').once('value'),db.ref('configuracoes/tema').once('value')]);
-  }).then(function(snaps){
+      return Promise.all([recordsRef.once('value'),materialsRef.once('value'),prefsRef.once('value'),db.ref('meta/v2migrado').once('value'),db.ref('configuracoes/paletas').once('value'),db.ref('configuracoes/tema').once('value')]);
+  }).then(function(first){
     active();
-    var legacyRecords=snaps[5].val()===true?[]:values(snaps[2].val());
-    var legacyMaterials=snaps[5].val()===true?[]:values(snaps[3].val());
-    var records=legacyRecords.concat(safeRead(localMigrationKey)?[]:localRecords);
-    var materials=legacyMaterials.concat(safeRead(localMigrationKey)?[]:localMaterials);
-    heartbeat('Migrando dados e fotos');
-    return migrateMaterials(materials).then(function(){active();return migrateRecords(records);}).then(function(){
-      active();if(!snaps[4].exists() && Object.keys(localPrefs).length)return prefsRef.set(localPrefs);
-    }).then(function(){active();if(!snaps[6].exists() && Object.keys(localPalettes).length)return db.ref('configuracoes/paletas').set(localPalettes);
-    }).then(function(){active();if(!snaps[7].exists())return db.ref('configuracoes/tema').set(localTheme);
-    }).then(function(){active();return db.ref('meta/v2migrado').set(true);}).then(function(){active();try{localStorage.setItem(localMigrationKey,'1');}catch(e){};});
-  }).then(function(){
-    active();heartbeat('Carregando registros sincronizados');
-    return Promise.all([recordsRef.once('value'),materialsRef.once('value'),prefsRef.once('value'),db.ref('configuracoes/paletas').once('value'),db.ref('configuracoes/tema').once('value')]);
+    var migrated=first[3].val()===true;
+    var serverRecords=first[0].val()||{}, serverMaterials=first[1].val()||{};
+    var localPending=!safeRead(localMigrationKey);
+    var legacy=migrated?Promise.resolve([null,null]):Promise.all([db.ref('registros').once('value'),db.ref('materiais').once('value')]).then(function(l){return [l[0].val(),l[1].val()];});
+    return legacy.then(function(l){
+      active();
+      var records=values(l[0]).concat(localPending?localRecords:[]);
+      /* O catálogo do servidor é a referência: a cópia local só é enviada se o servidor estiver vazio,
+         para não ressuscitar materiais excluídos em outro computador. */
+      var materials=values(l[1]).concat(localPending && !Object.keys(serverMaterials).length?localMaterials:[]);
+      var written=0;
+      heartbeat('Conferindo dados pendentes');
+      return migrateMaterials(materials,serverMaterials).then(function(n){written+=n;active();return migrateRecords(records,serverRecords);}).then(function(n){
+        written+=n;active();if(!first[2].exists() && Object.keys(localPrefs).length)return prefsRef.set(localPrefs);
+      }).then(function(){active();if(!first[4].exists() && Object.keys(localPalettes).length)return db.ref('configuracoes/paletas').set(localPalettes);
+      }).then(function(){active();if(!first[5].exists())return db.ref('configuracoes/tema').set(localTheme);
+      }).then(function(){active();if(!migrated)return db.ref('meta/v2migrado').set(true);
+      }).then(function(){active();try{localStorage.setItem(localMigrationKey,'1');}catch(e){}
+        if(!written)return [first[0],first[1],first[2],first[4],first[5]];
+        heartbeat('Carregando registros sincronizados');
+        return Promise.all([recordsRef.once('value'),materialsRef.once('value'),prefsRef.once('value'),db.ref('configuracoes/paletas').once('value'),db.ref('configuracoes/tema').once('value')]);
+      });
+    });
   }).then(function(snaps){
     active();clearTimeout(connectionTimer);
     recordCache=snaps[0].val()||{}; materialCache=snaps[1].val()||{};
