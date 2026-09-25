@@ -2903,23 +2903,14 @@ function CMRL_initRegistros(){
   var registros = loadAll();
   window.CMRL_getRegistros = function(){ return registros.slice(); };
 
-  /* Recompacta fotos antigas automaticamente (uma vez por registro). */
-  (function compactarFotosExistentes(){
-    if(!window.CMRL_cloudReady || !window.CMRL_cloudReady())return;
-    var alterou = false, tarefas = [];
-    var tetoUrl = FOTO_ALVO_KB * 1024 * 1.37;
-    registros.forEach(function(r){ ['fotoPeca','fotoEtiqueta'].forEach(function(c){
-      if(!r[c] || !/^data:image\//.test(r[c])) return;
-      /* Já está dentro do teto: não reprocessa. Evita gastar CPU a cada
-         abertura e, principalmente, evita degradar de novo foto boa. */
-      if(r[c].length <= tetoUrl) return;
-      tarefas.push(fetch(r[c]).then(function(x){ return x.blob(); }).then(function(b){
-        return comprimirImagem(b).then(function(n){ if(n.dataUrl.length < r[c].length){ r[c]=n.dataUrl; alterou=true; } });
-      }).catch(function(){}));
-    }); });
-    if(tarefas.length) Promise.all(tarefas).then(function(){ if(alterou) saveAll(registros); });
-  })();
+  /* A recompactação automática foi REMOVIDA. Ela rodava a cada abertura da
+     página e reescrevia a foto sempre que a nova versão fosse menor — ou
+     seja, degradava sozinha foto que já estava boa, sem ninguém pedir.
+     Reduzir foto agora só acontece por ação explícita, no botão abaixo. */
   document.getElementById('btn-compactar-fotos').addEventListener('click', function(){
+    if(!confirm('Reduzir as fotos já salvas para cerca de ' + FOTO_ALVO_KB + ' KB cada?\n\n' +
+                'A redução é definitiva: a qualidade descartada não volta. ' +
+                'Nenhuma foto fica abaixo de 1280 px.')) return;
     var b=this; b.disabled=true; b.textContent='Compactando…'; var tarefas=[];
     registros.forEach(function(r){ ['fotoPeca','fotoEtiqueta'].forEach(function(c){ if(!r[c]||!/^data:image\//.test(r[c]))return; tarefas.push(fetch(r[c]).then(function(x){return x.blob();}).then(function(bl){return comprimirImagem(bl).then(function(n){r[c]=n.dataUrl;});})); }); });
     Promise.all(tarefas).then(function(){saveAll(registros); render(); alert('Fotos compactadas com sucesso.');}).catch(function(){alert('Não foi possível compactar todas as fotos.');}).then(function(){b.disabled=false;b.textContent='🗜 Compactar fotos atuais';});
@@ -3030,15 +3021,16 @@ function CMRL_initRegistros(){
      em cerca de 30% menos bytes que o JPEG. Cada degrau é um par
      [lado maior em px, qualidade]; vence o PRIMEIRO que couber no teto.
      Ajuste apenas FOTO_ALVO_KB para trocar tamanho por nitidez. */
-  var FOTO_ALVO_KB = 95;              // teto por foto, em KB binários
+  var FOTO_ALVO_KB = 230;             // alvo por foto, em KB binários — ALVO, não teto
+  /* A escada reduz só o necessário e PARA no último degrau. Não existe
+     degrau baixo: mesmo que a foto não caiba no alvo, ela é guardada em
+     1280 px com qualidade 0.70, nunca menos. Antes o código descia até
+     360 px para caber no tamanho, e era isso que apagava a etiqueta. */
   var FOTO_ESCADA  = [
-    [1600, 0.82], [1600, 0.72], [1600, 0.62],
-    [1280, 0.82], [1280, 0.72], [1280, 0.62],
-    [1024, 0.80], [1024, 0.70], [1024, 0.60],
-    [ 800, 0.78], [ 800, 0.68], [ 800, 0.58],
-    [ 640, 0.76], [ 640, 0.64], [ 640, 0.52],
-    [ 480, 0.72], [ 480, 0.58], [ 480, 0.44],
-    [ 360, 0.60], [ 360, 0.42]
+    [2048, 0.88], [2048, 0.82],
+    [1600, 0.88], [1600, 0.82], [1600, 0.76],
+    [1440, 0.82], [1440, 0.76],
+    [1280, 0.82], [1280, 0.76], [1280, 0.70]   /* <- piso: nunca abaixo disto */
   ];
   /* WebP só é usado quando o navegador realmente sabe gerar WebP; senão
      cai em JPEG sozinho. Navegador antigo continua funcionando. */
@@ -3089,21 +3081,22 @@ function CMRL_initRegistros(){
         img.onerror = function(){ reject(new Error('Falha ao abrir a imagem.')); };
         img.onload = function(){
           var limite = FOTO_ALVO_KB * 1024 * 1.37;  // base64 ocupa ~37% a mais que o binário
-          var melhor = null, desenhos = {};
-          /* Prioriza legibilidade: percorre a escada do degrau mais nítido para o
-             menos nítido e para no PRIMEIRO que couber no teto. Cada resolução é
-             desenhada uma única vez e reaproveitada nas várias qualidades. */
+          var ultimo = null, desenhos = {};
+          /* Percorre a escada do degrau mais nítido para o menos nítido e para
+             no PRIMEIRO que couber no alvo. Cada resolução é desenhada uma
+             única vez e reaproveitada nas várias qualidades. */
           for(var i = 0; i < FOTO_ESCADA.length; i++){
             var lado = FOTO_ESCADA[i][0], q = FOTO_ESCADA[i][1];
             var d = desenhos[lado] || (desenhos[lado] = desenhar(img, lado));
             var out = d.canvas.toDataURL(FOTO_MIME, q);
-            var res = { dataUrl: out, w: d.w, h: d.h, q: q, mime: FOTO_MIME,
-                        bytes: Math.round(out.length * 0.75) };
-            if(out.length <= limite){ resolve(res); return; }
-            if(!melhor || out.length < melhor.dataUrl.length) melhor = res;
+            ultimo = { dataUrl: out, w: d.w, h: d.h, q: q, mime: FOTO_MIME,
+                       bytes: Math.round(out.length * 0.75) };
+            if(out.length <= limite){ resolve(ultimo); return; }
           }
-          /* Nem no degrau mais baixo coube: devolve a menor versão obtida */
-          resolve(melhor);
+          /* Não coube no alvo: fica no PISO da escada (1280 px / 0.70) e o
+             arquivo passa do alvo. Entre arquivo maior e etiqueta ilegível,
+             a decisão aqui é ficar com a foto legível. */
+          resolve(ultimo);
         };
         img.src = ev.target.result;
       };
